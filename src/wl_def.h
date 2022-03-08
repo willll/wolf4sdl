@@ -2,7 +2,7 @@
 #define WL_DEF_H
 
 #define USE_SPRITES 1
-#define PONY 1 
+#define PONY 1
 #define USE_ADX 1
 #define USE_SLAVE 1
 #define EMBEDDED 1
@@ -857,12 +857,12 @@ typedef struct objstruct
     activetype  active:2;
     short       ticcount;
     classtype   obclass:5;
-#ifndef EMBEDDED	
+#ifndef EMBEDDED
     statetype   *state;
 #else
 	int		id;
 	int		state; /* stateenum */
-#endif	
+#endif
     uint32_t    flags;              // FL_SHOOTABLE, etc
 
     int32_t     distance;           // if negative, wait for that door to open

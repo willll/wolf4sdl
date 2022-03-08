@@ -24,7 +24,7 @@ project( ${TARGET_NAME} VERSION 1.0
 set(as_flags )
 set(cxx_flags
         -O2 -g3 -m2 -fpermissive
-        -Wformat-diag -Wno-conversion-null
+        -Wno-conversion-null
         -fno-lto -Wshadow -Wall -Wswitch -Wpadded
         -fno-common -Wextra -Wno-narrowing -fno-web
         -fno-builtin -funit-at-a-time -Wwrite-strings
@@ -70,6 +70,8 @@ add_executable( ${TARGET_NAME}.elf ${SOURCES} )
 target_include_directories(
     ${TARGET_NAME}.elf PUBLIC
     .
+    src
+    sdl
     ${SEGALIB}/include
     ${SEGASGL}/include
     )

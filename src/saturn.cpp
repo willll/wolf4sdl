@@ -1,20 +1,20 @@
 //#define USE_SPRITES 1
 #include "wl_def.h"
 #include "sdl/SDL.h"
-#include "sdl/SDL_mixer.h"
+#include "sdl/SDL_Mixer.h"
 #include <stdlib.h>  /* malloc */
 //#include <string.h>  /* memcpy */
 #include <ctype.h>  /* toupper */
 #include <malloc.h>
-  #include "pcmsys.h"
+#include "pcmsys.h"
+
 extern "C" {
 
-//#include "L:\saturn\dev\sms_elf2\cdc\SEGA_CDC.H"
-#include	"C:/SaturnOrbit/SGL_302j/INC/sl_def.h"
-//#ifdef VBT
- #include "sega_cdc.h"
- #include "sega_snd.h"
-//#endif
+  #include "sl_def.h"
+  #include "sega_cdc.h"
+  #include "sega_snd.h"
+  #include "sega_sys.h"
+
 
 }
 
@@ -81,32 +81,32 @@ static Uint16 pad_asign[] = {
 };
 
 static const Sint8	logtbl[] = {
-/* 0 */		0, 
-/* 1 */		1, 
-/* 2 */		2, 2, 
-/* 4 */		3, 3, 3, 3, 
-/* 8 */		4, 4, 4, 4, 4, 4, 4, 4, 
-/* 16 */	5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 
-/* 32 */	6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 
-			6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 
-/* 64 */	7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 
-			7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 
-			7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 
-			7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 
-/* 128 */	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 
-			8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 
-			8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 
-			8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 
-			8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 
-			8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 
-			8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 
+/* 0 */		0,
+/* 1 */		1,
+/* 2 */		2, 2,
+/* 4 */		3, 3, 3, 3,
+/* 8 */		4, 4, 4, 4, 4, 4, 4, 4,
+/* 16 */	5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+/* 32 */	6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+			6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+/* 64 */	7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+			7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+			7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+			7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+/* 128 */	8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+			8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+			8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+			8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+			8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+			8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+			8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
 			8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8
 	};
 //--------------------------------------------------------------------------------------------------------------------------------------
 static unsigned int get_hz(void)
 {
 #define TVSTAT      (*(volatile Uint16 *)0x25F80004)
-	
+
 	if((TVSTAT & 1) == 0)
 		return 60;
 	else
@@ -122,25 +122,25 @@ static unsigned int get_hz(void)
 	if(width==320)
 	{
 		tv_mode = TV_320x224;
-		if(height==240) tv_mode = TV_320x240; 
+		if(height==240) tv_mode = TV_320x240;
 	}
 
 	if(width==352)
 	{
 		tv_mode = TV_352x224;
-		if(height==240) tv_mode = TV_352x240; 
+		if(height==240) tv_mode = TV_352x240;
 	}
 
 	if(width==640)
 	{
 		tv_mode = TV_640x224;
-		if(height==240) tv_mode = TV_640x240; 
+		if(height==240) tv_mode = TV_640x240;
 	}
-#ifdef USE_SPRITES 
+#ifdef USE_SPRITES
 	slInitSystem(tv_mode, (TEXTURE*)tex_spr, 1);
 #else
 	slInitSystem(tv_mode, NULL, 1);
-#endif	
+#endif
 	hz = get_hz();
 //	slZdspLevel(8);
 // vbt 26/07/2020
@@ -157,29 +157,29 @@ static unsigned int get_hz(void)
 		slCharNbg1(COL_TYPE_32768 , CHAR_SIZE_1x1);
 	}
 
-    slInitBitMap(bmNBG1, BM_512x256, (void *)VDP2_VRAM_A0);
-    slBMPaletteNbg1(1);
-	extern Uint16 VDP2_RAMCTL;	
+  //slInitBitMap(bmNBG1, BM_512x256, (void *)VDP2_VRAM_A0);
+  slBMPaletteNbg1(1);
+	extern Uint16 VDP2_RAMCTL;
 	VDP2_RAMCTL = VDP2_RAMCTL & 0xFCFF;
 	extern Uint16 VDP2_TVMD;
 	VDP2_TVMD &= 0xFEFF;
-	
-    slScrAutoDisp(NBG0ON| NBG1ON);
-	
+
+  slScrAutoDisp(NBG0ON| NBG1ON);
+
 	slScrCycleSet(0x55EEEEEE , NULL , 0x044EEEEE , NULL);
-//#define		BACK_COL_ADR		( VDP2_VRAM_A1 + 0x1fffe )	
+//#define		BACK_COL_ADR		( VDP2_VRAM_A1 + 0x1fffe )
 //	slBack1ColSet((void *)BACK_COL_ADR , RGB(14,14,14));
 //	slScrTransparent(RBG0ON);
-	
+
 //    slScrAutoDisp(RBG0ON| NBG0ON| NBG1ON| NBG3ON);
 //	VDP2_RAMCTL = VDP2_RAMCTL & 0xFCFF;
 /*  /// vbt ? remettre
-slCharNbg3(COL_TYPE_256, CHAR_SIZE_1x1); 
-slPageNbg3((void*)0x25e60000, 0, PNB_1WORD|CN_10BIT ); 
-slPlaneNbg3(PL_SIZE_1x1); 
-slMapNbg3((void*)0x25e76000, (void*)0x25e76000, (void*)0x25e76000, (void*)0x25e76000); 
+slCharNbg3(COL_TYPE_256, CHAR_SIZE_1x1);
+slPageNbg3((void*)0x25e60000, 0, PNB_1WORD|CN_10BIT );
+slPlaneNbg3(PL_SIZE_1x1);
+slMapNbg3((void*)0x25e76000, (void*)0x25e76000, (void*)0x25e76000, (void*)0x25e76000);
 
-slBitMapNbg0(COL_TYPE_16, BM_512x256, (void *)VDP2_VRAM_A0); 
+slBitMapNbg0(COL_TYPE_16, BM_512x256, (void *)VDP2_VRAM_A0);
 slBMPalette(bmNBG0 , 0);
 slPriorityRbg0(7);
 slPriorityNbg3(7);
@@ -187,15 +187,15 @@ slPriorityNbg3(7);
 	slPriorityNbg0(7);  // avant rbg0
 	slPriorityNbg1(6);
 	slPrioritySpr0(5);
-#ifdef USE_SPRITES 	
+#ifdef USE_SPRITES
 	slZdspLevel(7); // vbt : ne pas d?placer !!!
-#endif	
+#endif
 	screeny->pixels = (unsigned char*)malloc(sizeof(unsigned char)*width*height);
-	
+
 	CHECKMALLOCRESULT(screeny->pixels);
 	screeny->pitch = width;
 	screeny->w     = width;
-	screeny->h     = height;	
+	screeny->h     = height;
 //	memset(screen->pixels,0x00,width*height);
 	return screeny;
 }
@@ -210,8 +210,8 @@ int SDL_SetColors(SDL_Surface *surface, 	SDL_Color *colors, int firstcolor, int 
 		palo[i] = RGB(colors[i].r>>3,colors[i].g>>3,colors[i].b>>3);
 	}
 	Pal2CRAM(palo , (void *)NBG1_COL_ADR , ncolors);
-	Pal2CRAM(palo+14 , (void *)NBG0_COL_ADR , ncolors);  
-	
+	Pal2CRAM(palo+14 , (void *)NBG0_COL_ADR , ncolors);
+
 	return 1;
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
@@ -251,38 +251,38 @@ int SDL_Init(Uint32 flags)
     // Setup SCSP Slot 16 and Slot 17 for playing
     slot_ptr = (volatile Uint16 *)(0x25B00000 + (0x20 * 16));
     slot_ptr[0] = 0x1000;
-    slot_ptr[1] = 0x0000; 
-    slot_ptr[2] = 0x0000; 
-    slot_ptr[3] = 0x0000; 
-    slot_ptr[4] = 0x0000; 
-    slot_ptr[5] = 0x0000; 
-    slot_ptr[6] = 0x00FF; 
-    slot_ptr[7] = 0x0000; 
-    slot_ptr[8] = 0x0000; 
-    slot_ptr[9] = 0x0000; 
-    slot_ptr[10] = 0x0000; 
+    slot_ptr[1] = 0x0000;
+    slot_ptr[2] = 0x0000;
+    slot_ptr[3] = 0x0000;
+    slot_ptr[4] = 0x0000;
+    slot_ptr[5] = 0x0000;
+    slot_ptr[6] = 0x00FF;
+    slot_ptr[7] = 0x0000;
+    slot_ptr[8] = 0x0000;
+    slot_ptr[9] = 0x0000;
+    slot_ptr[10] = 0x0000;
     slot_ptr[11] = 0x001F | (vol_l << 5);
-    slot_ptr[12] = 0x0000; 
-    slot_ptr[13] = 0x0000; 
-    slot_ptr[14] = 0x0000; 
-    slot_ptr[15] = 0x0000; 
+    slot_ptr[12] = 0x0000;
+    slot_ptr[13] = 0x0000;
+    slot_ptr[14] = 0x0000;
+    slot_ptr[15] = 0x0000;
 
     slot_ptr = (volatile Uint16 *)(0x25B00000 + (0x20 * 17));
     slot_ptr[0] = 0x1000;
-    slot_ptr[1] = 0x0000; 
-    slot_ptr[2] = 0x0000; 
-    slot_ptr[3] = 0x0000; 
-    slot_ptr[4] = 0x0000; 
-    slot_ptr[5] = 0x0000; 
-    slot_ptr[6] = 0x00FF; 
-    slot_ptr[7] = 0x0000; 
-    slot_ptr[8] = 0x0000; 
-    slot_ptr[9] = 0x0000; 
-    slot_ptr[10] = 0x0000; 
+    slot_ptr[1] = 0x0000;
+    slot_ptr[2] = 0x0000;
+    slot_ptr[3] = 0x0000;
+    slot_ptr[4] = 0x0000;
+    slot_ptr[5] = 0x0000;
+    slot_ptr[6] = 0x00FF;
+    slot_ptr[7] = 0x0000;
+    slot_ptr[8] = 0x0000;
+    slot_ptr[9] = 0x0000;
+    slot_ptr[10] = 0x0000;
     slot_ptr[11] = 0x000F | (vol_r << 5);
-    slot_ptr[12] = 0x0000; 
-    slot_ptr[13] = 0x0000; 
-    slot_ptr[14] = 0x0000; 
+    slot_ptr[12] = 0x0000;
+    slot_ptr[13] = 0x0000;
+    slot_ptr[14] = 0x0000;
     slot_ptr[15] = 0x0000;
 
     *((volatile Uint16 *)(0x25B00400)) = 0x020F;
@@ -292,12 +292,12 @@ int SDL_InitSubSystem(Uint32 flags)
 {
 	if(flags &= SDL_INIT_AUDIO)
 	{
-		
+
 #ifdef PONY
 	sound_external_audio_enable(5, 5);
 	load_drv(ADX_MASTER_768);
-#else		
-		
+#else
+
 		char sound_map[] =  {0xff,0xff,0xff,0xff};//,0xff,0xff,0xff,0xff,0xff,0xff,0xff};
 	//slPrint("init sound                                    ",slLocate(2,21));
 #ifdef ACTION_REPLAY
@@ -310,12 +310,12 @@ unsigned char *sndDrvAddr;
 		sndDrvAddr = (unsigned char *)SDDRV_ADDR;
 		GFS_Load(GFS_NameToId((Sint8*)SDDRV_NAME),0,(void *) sndDrvAddr,SDDRV_SIZE);
 		slInitSound(sndDrvAddr , SDDRV_SIZE , (Uint8 *)sound_map , sizeof(sound_map)) ;
-		sndDrvAddr = NULL;		
+		sndDrvAddr = NULL;
 //	slPrint("                                    ",slLocate(2,21));
 #endif
 
 
-#endif			
+#endif
 	}
 
 	if(flags &= SDL_INIT_TIMER)
@@ -370,7 +370,7 @@ void SDL_JoystickClose(SDL_Joystick *joystick)
 //--------------------------------------------------------------------------------------------------------------------------------------
 /*SDLMod SDL_GetModState(void)
 {
-	//slPrint("SDL_GetModState empty" ,slLocate(2,22));	 
+	//slPrint("SDL_GetModState empty" ,slLocate(2,22));
 	return KMOD_NONE;
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
@@ -418,14 +418,14 @@ void SDL_UnlockSurface(SDL_Surface *surface)
 	unsigned char *surfacePtr = (unsigned char*)surface->pixels;
 	unsigned int *nbg1Ptr = (unsigned int*)VDP2_VRAM_A0;
 
-	for (i = 0; i < screenHeight; i++) 
+	for (i = 0; i < screenHeight; i++)
 	{
 //		DMA_ScuMemCopy((unsigned char*)(VDP2_VRAM_A0 + (i<<9)), (unsigned char*)(surface->pixels + (i * screenWidth)), screenWidth); // vbt 20-22fps
 //		SCU_DMAWait();
 //		memcpyl((unsigned long*)(VDP2_VRAM_A0 + (i<<9)), (unsigned long*)(surface->pixels + (i * screenWidth)), screenWidth); // vbt : 22-24fps
-// vbt : remttre la copie dma		
+// vbt : remttre la copie dma
 //		slDMACopy((unsigned long*)surfacePtr,(void *)(VDP2_VRAM_A0 + (i<<9)),screenWidth);
-		slDMACopy((unsigned long*)surfacePtr,(void *)nbg1Ptr,screenWidth); // vbt à remettre !!!
+		slDMACopy((unsigned long*)surfacePtr,(void *)nbg1Ptr,screenWidth); // vbt ï¿½ remettre !!!
 		surfacePtr+=screenWidth;
 //		nb_unlock+=screenWidth;
 		nbg1Ptr+=128;
@@ -437,12 +437,12 @@ int SDL_OpenAudio(SDL_AudioSpec *desired, SDL_AudioSpec *obtained)
 {
 	Sint8 err=0;
 	memcpy(obtained,desired,sizeof(SDL_AudioSpec));
-#ifdef PONY	
-	
+#ifdef PONY
+
 #else
 	Sint32		oct, shift_freq, fns;
 	Uint8 i;
-	
+
 	for (i=0; i<4; i++)
 	{
 		m_dat[i].mode = 0;
@@ -467,7 +467,7 @@ int SDL_OpenAudio(SDL_AudioSpec *desired, SDL_AudioSpec *obtained)
 		}	 */
 //		slSynch();  // vbt 26/05/2019 remis // change rien
 	}
-#endif	
+#endif
 	return err;
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
@@ -478,7 +478,7 @@ void SDL_CloseAudio(void)
 //--------------------------------------------------------------------------------------------------------------------------------------
 void SDL_PauseAudio(int pause_on)
 {
-#ifdef PONY	
+#ifdef PONY
 	Uint8 i;
 	for (i=0;i<4;i++)
 		pcm_cease(i);
@@ -494,13 +494,13 @@ int SDL_UpperBlit (SDL_Surface *src, SDL_Rect *srcrect, SDL_Surface *dst, SDL_Re
 {
 	unsigned char *surfacePtr = (unsigned char*)src->pixels + ((srcrect->y) * src->pitch) + srcrect->x;
 	unsigned int *nbg1Ptr = (unsigned int*)(VDP2_VRAM_A0 + (dstrect->y<<9)+ dstrect->x);
-	
+
 	if((srcrect)!=NULL)
 		for( Sint16 i=0;i<srcrect->h;i++)
 		{
 //			slDMACopy((unsigned long*)((byte*)src->pixels + ((i + srcrect->y) * src->pitch) + srcrect->x),(unsigned long*)(void *)(VDP2_VRAM_A0 + ((i + dstrect->y)<<9)+ dstrect->x),srcrect->w);
 //			memcpyl((unsigned long*)nbg1Ptr, (unsigned long*)surfacePtr, srcrect->w); // vbt : 22-24fps
-			slDMACopy((unsigned long*)surfacePtr,(unsigned long*)(void *)nbg1Ptr,srcrect->w); // vbt à remettre
+			slDMACopy((unsigned long*)surfacePtr,(unsigned long*)(void *)nbg1Ptr,srcrect->w); // vbt ï¿½ remettre
 //			slDMACopy((unsigned long*)((byte*)src->pixels + ((i + srcrect->y) * src->pitch) + srcrect->x),(unsigned long*)(void *)(VDP2_VRAM_A0 + ((i + dstrect->y)<<9)+ dstrect->x),srcrect->w);
 			surfacePtr+=src->pitch;
 //			    nb_unlock+=srcrect->w;
@@ -524,11 +524,11 @@ void SDL_UpdateRect (SDL_Surface *screen, Sint32 x, Sint32 y, Uint32 w, Uint32 h
 
 int SDL_FillRect (SDL_Surface *dst, SDL_Rect *dstrect, Uint32 color)
 {
-	if((dst)!=NULL)		
+	if((dst)!=NULL)
 		if((dstrect)!=NULL)
 		{
 	//		slBMBoxFill(dstrect->x, dstrect->y, dstrect->x + dstrect->w - 1, dstrect->y + dstrect->h - 1, color);
-			Uint8*d = (Uint8*)dst->pixels + dstrect->x + dstrect->y*screenWidth; 
+			Uint8*d = (Uint8*)dst->pixels + dstrect->x + dstrect->y*screenWidth;
 			int w = dstrect->w;
 			int p = dst->pitch;
 			for( Sint16 i=0;i<dstrect->h;i++)
@@ -559,7 +559,7 @@ SDL_Surface * SDL_CreateRGBSurface(Uint32 flags, int width, int height, int dept
 	screeny->pitch = width;
 	screeny->w     = width;
 	screeny->h     = height;
-	
+
 	return screeny;
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
@@ -653,7 +653,7 @@ void SDL_PollEvent(int start,int end, SDL_Event *event)
 			data = ~Smpc_Peripheral[0].push;
 	}
 
-	if(data & PER_DGT_ST && data & PER_DGT_TA && data & PER_DGT_TB && data & PER_DGT_TC) 
+	if(data & PER_DGT_ST && data & PER_DGT_TA && data & PER_DGT_TB && data & PER_DGT_TC)
 	{
 		event->type = SDL_QUIT;
 		return 1;
@@ -682,7 +682,7 @@ void SDL_PollEvent(int start,int end, SDL_Event *event)
 			*evt=0;
 		}
 		evt++;
-	}	  
+	}
 
 	if(start==0)
 	{
@@ -724,53 +724,53 @@ void SDL_PollEvent(int start,int end, SDL_Event *event)
 			case 4:/*PER_DGT_TA: */
 			event->key.keysym.sym = SDLK_KP_ENTER;
 			break;
-			
+
 			case 5:/*PER_DGT_TB: */
 			event->key.keysym.sym = SDLK_SPACE;
-			break;	
-			
+			break;
+
 			case 6:/*PER_DGT_TC: */
 			case 10:/*PER_DGT_TZ: */
 			event->key.keysym.sym = SDLK_RCTRL;
-			break;	
+			break;
 
 			case 8:/*PER_DGT_TX: */
 			event->key.keysym.sym = SDLK_RALT;
 			break;
-			
+
 			case 9:/*PER_DGT_TY: */
 			event->key.keysym.sym = SDLK_RSHIFT;
-			break;	
+			break;
 
 			case 11:/*PER_DGT_TL: */
 			buttonstate[bt_prevweapon] = true;
 			CheckWeaponChange ();
-			break;	
+			break;
 
 			case 12:/*PER_DGT_TR: */
 			buttonstate[bt_nextweapon] = true;
 			CheckWeaponChange ();
-			break;	
+			break;
 
 			case 7:/*PER_DGT_ST: */
 			event->key.keysym.sym = SDLK_ESCAPE;
-			break;	
+			break;
 
 			case 3:/*PER_DGT_KL: */
 				event->key.keysym.sym = SDLK_LEFT;
-			break;	
+			break;
 
 			case 2:/*PER_DGT_KR: */
 				event->key.keysym.sym = SDLK_RIGHT;
-			break;	
+			break;
 
 			case 1:/*PER_DGT_KD: */
 			event->key.keysym.sym = SDLK_DOWN;
-			break;	
+			break;
 
 			case 0:/*PER_DGT_KU: */
 			event->key.keysym.sym = SDLK_UP;
-			break;	
+			break;
 
 			default:
 			event->key.keysym.sym = SDLK_LAST;//SDLK_FIRST;
@@ -790,11 +790,11 @@ int SDL_WaitEvent(SDL_Event *event)
 	//event->type = SDL_NOEVENT;
 	if (event->type== SDL_KEYUP) {
 		event->type = SDL_NOEVENT;
-		event->key.keysym.sym = SDLK_FIRST;	
+		event->key.keysym.sym = SDLK_FIRST;
 		return 1;
 	}
- 
-	do {	
+
+	do {
 		 /*
 		 take pressed buttons of both pads, to enable two player
 		 */
@@ -813,7 +813,7 @@ int SDL_WaitEvent(SDL_Event *event)
 		if(data & PER_DGT_ST && data & PER_DGT_TA && data & PER_DGT_TB && data & PER_DGT_TC) {
 			event->type = SDL_QUIT;
 			return 1;
-		}		
+		}
 		/*
 			move cursor
 		*/
@@ -823,7 +823,7 @@ int SDL_WaitEvent(SDL_Event *event)
 			return;
 		}
 
-		if(!(data & PER_DGT_ST) 
+		if(!(data & PER_DGT_ST)
 			&& event->key.keysym.sym == SDLK_SPACE
 			&& event->type                     == SDL_KEYDOWN) {
 			event->type = SDL_KEYUP;
@@ -835,8 +835,8 @@ int SDL_WaitEvent(SDL_Event *event)
 			event->key.keysym.sym = SDLK_KP_ENTER;
 			return 1;
 		}
-		
-		if(!(data & PER_DGT_TA) 
+
+		if(!(data & PER_DGT_TA)
 			&& event->key.keysym.sym == SDLK_KP_ENTER
 			&& event->type                     == SDL_KEYDOWN) {
 			event->type = SDL_KEYUP;
@@ -847,9 +847,9 @@ int SDL_WaitEvent(SDL_Event *event)
 			event->type = SDL_KEYDOWN;
 			event->key.keysym.sym = SDLK_e;
 			return 1;
-		}		
-		
-		if(!(data & PER_DGT_TB) 
+		}
+
+		if(!(data & PER_DGT_TB)
 			&& event->key.keysym.sym == SDLK_e
 			&& event->type                     == SDL_KEYDOWN) {
 			event->type = SDL_KEYUP;
@@ -861,8 +861,8 @@ int SDL_WaitEvent(SDL_Event *event)
 			event->key.keysym.sym = SDLK_p;
 			return 1;
 		}
-		
-		if(!(data & PER_DGT_TC) 
+
+		if(!(data & PER_DGT_TC)
 			&& event->key.keysym.sym == SDLK_p
 			&& event->type                     == SDL_KEYDOWN) {
 			event->type = SDL_KEYUP;
@@ -874,8 +874,8 @@ int SDL_WaitEvent(SDL_Event *event)
 			event->key.keysym.sym = SDLK_z;
 			return 1;
 		}
-		
-		if(!(data & PER_DGT_KL) 
+
+		if(!(data & PER_DGT_KL)
 			&& event->key.keysym.sym == SDLK_z
 			&& event->type                     == SDL_KEYDOWN) {
 			event->type = SDL_KEYUP;
@@ -887,8 +887,8 @@ int SDL_WaitEvent(SDL_Event *event)
 			event->key.keysym.sym = SDLK_x;
 			return 1;
 		}
-		
-		if(!(data & PER_DGT_KR) 
+
+		if(!(data & PER_DGT_KR)
 			&& event->key.keysym.sym == SDLK_x
 			&& event->type                     == SDL_KEYDOWN) {
 			event->type = SDL_KEYUP;
@@ -900,8 +900,8 @@ int SDL_WaitEvent(SDL_Event *event)
 			event->key.keysym.sym = SDLK_o;
 			return 1;
 		}
-		
-		if(!(data & PER_DGT_KU) 
+
+		if(!(data & PER_DGT_KU)
 			&& event->key.keysym.sym == SDLK_o
 			&& event->type                     == SDL_KEYDOWN) {
 			event->type = SDL_KEYUP;
@@ -913,8 +913,8 @@ int SDL_WaitEvent(SDL_Event *event)
 			event->key.keysym.sym = SDLK_k;
 			return 1;
 		}
-		
-		if(!(data & PER_DGT_KD) 
+
+		if(!(data & PER_DGT_KD)
 			&& event->key.keysym.sym == SDLK_k
 			&& event->type                     == SDL_KEYDOWN) {
 			event->type = SDL_KEYUP;
@@ -951,7 +951,7 @@ int Mix_PlayChannel (int channel, Mix_Chunk *chunk, int loops)
 	pcm_play(channel, PCM_SEMI, 6);
 #else
 	unsigned char i;
-	
+
 	if(chunk->alen>0 && chunk->alen <100000)
 	for(i=0;i<4;i++)
 	{
@@ -960,11 +960,11 @@ int Mix_PlayChannel (int channel, Mix_Chunk *chunk, int loops)
 			//slPCMOff(&m_dat[i]);
 			//slPCMParmChange(&m_dat[i]);
 			slSndFlush() ;
-// vbt 26/07/2020 : ? remettre	
+// vbt 26/07/2020 : ? remettre
 				m_dat[i].mode= _PCM8Bit;
 			slPCMOn(&m_dat[i],chunk->abuf,chunk->alen);
 				break;
-		}		 
+		}
 	}
 #endif
 	return 1;
@@ -995,7 +995,7 @@ void wait_vblank(int nb)
 	for(int i=0;i<nb;i++)
 	{
 		 while((TVSTAT & 8) == 8);
-		 while((TVSTAT & 8) == 0);		 
+		 while((TVSTAT & 8) == 0);
 	}
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
@@ -1065,7 +1065,7 @@ void Pal2CRAM( Uint16 *Pal_Data , void *Col_Adr , Uint32 suu )
 void InitCD()
 {
 	Uint32 lib_work[GFS_WORK_SIZE(MAX_OPEN) / sizeof(Uint32)];
-	GfsDirTbl dirtbl; 
+	GfsDirTbl dirtbl;
 
 #ifndef ACTION_REPLAY
 
@@ -1074,21 +1074,21 @@ CdUnlock();
 #endif
 
 //	Sint32 ret;
- 
+
 	CDC_CdInit(0x00,0x00,0x05,0x0f);
     GFS_DIRTBL_TYPE(&dirtbl) = GFS_DIR_NAME;
     GFS_DIRTBL_DIRNAME(&dirtbl) = dir_name;
     GFS_DIRTBL_NDIR(&dirtbl) = MAX_DIR;
     GFS_Init(MAX_OPEN, lib_work, &dirtbl);
-#endif	    
+#endif
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
 void ChangeDir(char *dirname)
 {
-#ifndef ACTION_REPLAY	
+#ifndef ACTION_REPLAY
     Sint32 fid;
-	GfsDirTbl dirtbl; 
-	
+	GfsDirTbl dirtbl;
+
     fid = GFS_NameToId((Sint8 *)dirname);
 
 	GFS_DIRTBL_TYPE(&dirtbl) = GFS_DIR_NAME;
@@ -1100,31 +1100,31 @@ void ChangeDir(char *dirname)
 	for (;;) {
 		if (GFS_SetDir(&dirtbl) == 0) {
 			break;
-		}				 
-	}	 
-#endif	
+		}
+	}
+#endif
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
 Sint32 GetFileSize(int file_id)
 {
-#ifndef ACTION_REPLAY	
+#ifndef ACTION_REPLAY
 	GfsHn gfs;
 	Sint32	lastsize;
-    
+
     gfs = GFS_Open(file_id);
 	GFS_GetFileInfo(gfs,(Sint32*)&file_id,(Sint32*)NULL,&lastsize,NULL);
     GFS_Close(gfs);
-	return lastsize;	  
+	return lastsize;
 #else
     return 300;
-#endif	
+#endif
 }
 
 //--------------------------------------------------------------------------------------------------------------------------------------
 void	InitCDBlock( void ){
-    
+
 //    InitSoundDriver();
-    
+
     CDC_PLY_STYPE(&playdata) = CDC_PTYPE_TNO;	/* set by track number.*/
     CDC_PLY_STNO( &playdata) = 2;		/* start track number. */
     CDC_PLY_SIDX( &playdata) = 1;		/* start index number. */
@@ -1147,13 +1147,13 @@ void	satPlayMusic( Uint8 track ){
 	{
 		tno[0]=0;
 	}
-  
+
 //	char toto[50];
 //	sprintf(toto,"start track **%d\n%d\n**new start  : %d**",tno[0],track,track+tno[0])  ;
 //slPrintHex(track + tno[0],slLocate(10,8));
 //	FNT_Print256_2bpp((volatile Uint8 *)SCL_VDP2_VRAM_B1,(Uint8 *)toto,84,100,2,8,9,0);
 
-//    CDC_PLY_PMODE(&playdata) = CDC_PTYPE_NOCHG;//CDC_PM_DFL + 30;	// Play Mode. 
+//    CDC_PLY_PMODE(&playdata) = CDC_PTYPE_NOCHG;//CDC_PM_DFL + 30;	// Play Mode.
 	CDC_POS_PTYPE( &posdata ) = CDC_PTYPE_TNO;
     CDC_PLY_STNO( &playdata ) = (Uint8) (track + tno[0]);
     CDC_PLY_ETNO( &playdata ) = (Uint8) (track + tno[0]);
@@ -1281,9 +1281,9 @@ SDL_RWops *SDL_RWFromFile(const char *file, const char *mode)
 
 #if 0 // code pour faire le sol
 // slScrTransparent(RBG0ON); ? mettre dans l'affichages des menus!!!
-#define		RBG0RB_CEL_ADR			(VDP2_VRAM_A0            )	
+#define		RBG0RB_CEL_ADR			(VDP2_VRAM_A0            )
 #define		RBG0_PRA_ADR			(VDP2_VRAM_A1   + 0x1fe00)
-#define		RBG0_KTB_ADR			(VDP2_VRAM_A1            )	
+#define		RBG0_KTB_ADR			(VDP2_VRAM_A1            )
 #define		RBG0RA_CEL_ADR			(RBG0RB_CEL_ADR + 0x14000)
 #define		RBG0RA_MAP_ADR			(RBG0RB_MAP_ADR + 0x02000)
 #define		RBG0RB_MAP_ADR			(VDP2_VRAM_B0            )
@@ -1293,8 +1293,8 @@ SDL_RWops *SDL_RWFromFile(const char *file, const char *mode)
 	extern Uint8 cross_cel[];
 	extern Uint16 cross_map[];
 	extern Uint16 cross_pal[];
-	
-Cel2VRAM(cross_cel, (void *)RBG0RA_CEL_ADR , 16000);	
+
+Cel2VRAM(cross_cel, (void *)RBG0RA_CEL_ADR , 16000);
 Map2VRAM(cross_map, (void *)RBG0RA_MAP_ADR , 32 , 32 , 1 , 0);
 Pal2CRAM(cross_pal, (void *)RBG0RA_COL_ADR , 256);
 
@@ -1312,11 +1312,11 @@ Pal2CRAM(cross_pal, (void *)RBG0RA_COL_ADR , 256);
 	FIXED	posy = toFIXED(0.0);
 	ANGLE	angz = DEGtoANG(0.0);
 	ANGLE	angz_up = DEGtoANG(0.0);
-	
+
 	slTVOn();
 //---------------------------------------------------------------------------
 do
-{	
+{
 		slCurRpara(RA);
 		slUnitMatrix(CURRENT);
 		slTranslate(toFIXED(0.0) , toFIXED(0.0) + posy , toFIXED(100.0));
@@ -1328,10 +1328,10 @@ do
 //		angz_up += DEGtoANG(0.5);
 //		angz = (slSin(angz_up) >> 4);
 
-	
+
 	slSynch();
-}	
-while(1);	
+}
+while(1);
 
  void Map2VRAM( Uint16 *Map_Data , void *Map_Adr , Uint16 suuj , Uint16 suui , Uint16 palnum ,Uint32 mapoff)
 {
@@ -1341,7 +1341,7 @@ while(1);
 
 	paloff= palnum << 12;
 	VRAM = (Uint16 *)Map_Adr;
-	
+
 
 	for( i = 0; i < suui; i++ ) {
 		for( j = 0; j < suuj; j++ ) {
@@ -1352,7 +1352,7 @@ while(1);
 	}
 }
 
- 
+
  void Cel2VRAM( Uint8 *Cel_Data , void *Cell_Adr , Uint32 suu )
 {
 	Uint32 i;
@@ -1364,7 +1364,7 @@ while(1);
 		*(VRAM++) = *(Cel_Data++);
 }
 
-	
+
 Uint8 cross_cel[]={
 /* [ 0 ] */
 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -3866,7 +3866,7 @@ Uint8 cross_cel[]={
 0x85,0x58,0x00,0x00,0x00,0x00,0x00,0x00,
 0x99,0x9d,0x00,0x00,0x00,0x00,0x00,0x00,
 
-};	
+};
 
 Uint16 cross_map[]={
 0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,
@@ -3901,7 +3901,7 @@ Uint16 cross_map[]={
 0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,
 0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,
 0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,
-};	
+};
 
 Uint16 cross_pal[]={
 	0x7fff,0x7b7e,0x008e,0x0125,0x0127,0x4e3c,0x2511,0x0060,
