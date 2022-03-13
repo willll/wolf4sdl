@@ -1529,8 +1529,9 @@ inline static fixed FixedMul(fixed a, fixed b)
     #define strcasecmp stricmp
     #define strncasecmp strnicmp
 #else
-    inline char* itoa(int value, char* string)
+    inline char* itoa(int value, char* string, int dummy = 10)
     {
+      dummy;
 	    sprintf(string, "%d", value);
 	    return string;
     }

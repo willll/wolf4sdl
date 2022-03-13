@@ -925,8 +925,8 @@ void T_Projectile(objtype *ob)
 	ob->x += deltax;
 	ob->y += deltay;
 
-	deltax = labs(ob->x - player->x);
-	deltay = labs(ob->y - player->y);
+	deltax = LABS(ob->x - player->x);
+	deltay = LABS(ob->y - player->y);
 
 	if (!ProjectileTryMove(ob))
 	{
@@ -5491,7 +5491,7 @@ void T_SchabbThrow (objtype *ob)
     deltay = ob->y - player->y;
 //    angle = (float) atan2((float) deltay, (float) deltax);
 	angle = (slAtan ((deltay<<16), (deltax<<16)))>>16;
-	
+
     if (angle<0)
 //        angle = (float) (M_PI*2+angle);
         angle = (int) (M_PI*2+angle);
@@ -6136,7 +6136,7 @@ void T_FakeFire (objtype *ob)
     deltay = ob->y - player->y;
 //    angle = (float) atan2((float) deltay, (float) deltax);
 	angle = (slAtan ((deltay<<16), (deltax<<16)))>>16;
-	
+
     if (angle<0)
 //        angle = (float)(M_PI*2+angle);
         angle = (int)(M_PI*2+angle);
@@ -7032,7 +7032,7 @@ void    A_StartDeathCam (objtype *ob)
 #endif
     IN_UserInput(300);
 	VL_BarScaledCoord (viewscreenx,viewscreeny,viewwidth,viewheight,0); // vbt nettoie l'écran, à mettre en sortant du resize
-	
+
     //
     // line angle up exactly
     //
