@@ -84,7 +84,7 @@ target_link_options(${TARGET_NAME}.elf PUBLIC
     "SHELL:-Xlinker --strip-debug"
     "SHELL:-Xlinker -fno-lto"
     "SHELL:-m2 -nostartfiles"
-    "SHELL:-T root/SL.LNK"
+    "SHELL:-T ${PROJECT_SOURCE_DIR}/root/sl.lnk"
     "SHELL:-Xlinker -e -Xlinker ___Start -Xlinker -S -nostartfiles"
     #"SHELL:-lc -lgcc -lm"
 )
