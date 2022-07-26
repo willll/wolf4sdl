@@ -10,6 +10,8 @@ set(CMAKE_STATIC_LIBRARY_PREFIX "")
 
 set(SEGALIB $ENV{SATURN_SBL}/segalib)
 set(SEGASGL $ENV{SATURN_SGL})
+set(JOSGL $ENV{SATURN_JOENGINE}/common/SGL_302j/LIB_ELF)
+
 
 set(SATURN_COMMON $ENV{SATURN_COMMON})
 set(SATURN_CMAKE $ENV{SATURN_CMAKE})
@@ -89,11 +91,15 @@ target_link_options(${TARGET_NAME}.elf PUBLIC
     "SHELL:-lc -lgcc"
 )
 
-target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_sgl.a )
-target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGASGL}/lib/libsgl.a )
+target_link_libraries(${TARGET_NAME}.elf PUBLIC ${JOSGL}/LIBSGL.A )
+#target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGASGL}/lib/libsgl.a )
 target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_scl.a )
 target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_mth.a )
+target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_csh.a )
+target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_gfs.a )
 target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_spr.a )
 target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_cdc.a )
 target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_per.a )
+target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_dma.a )
 target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_int.a )
+target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_sys.a )
