@@ -86,9 +86,11 @@ target_link_options(${TARGET_NAME}.elf PUBLIC
     "SHELL:-m2 -nostartfiles"
     "SHELL:-T ${PROJECT_SOURCE_DIR}/root/sl.lnk"
     "SHELL:-Xlinker -e -Xlinker ___Start -Xlinker -S -nostartfiles"
-    #"SHELL:-lc -lgcc -lm"
+    "SHELL:-lc -lgcc"
 )
 
+target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_sgl.a )
+target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGASGL}/lib/libsgl.a )
 target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_scl.a )
 target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_mth.a )
 target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_spr.a )
