@@ -1,5 +1,7 @@
 //#define USE_SPRITES 1
-#include "wl_def.h"
+extern "C" {
+  #include "wl_def.h"
+}
 #include "sdl/SDL.h"
 #include "sdl/SDL_Mixer.h"
 #include <stdlib.h>  /* malloc */
