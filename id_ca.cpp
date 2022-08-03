@@ -24,11 +24,8 @@ loaded into the data segment
  */
 #include "wl_def.h"
 
-#pragma hdrstop
 #define THREEBYTEGRSTARTS
-#define HEAP_WALK 1
-
-extern unsigned int position_vram;
+//#define HEAP_WALK 1
 
 #ifdef HEAP_WALK
 extern Uint32  end;
@@ -127,13 +124,17 @@ typedef struct
 =============================================================================
 */
 
-#define BUFFERSIZE 0x800
+#define BUFFERSIZE 0x2000
 static int32_t bufferseg[BUFFERSIZE/4];
 
 int     mapon;
 
 word    *mapsegs[MAPPLANES];
+#ifndef EMBEDDED
 static maptype* mapheaderseg[NUMMAPS];
+#else
+static maptype mapheaderseg;
+#endif
 //byte    *audiosegs[NUMSNDCHUNKS];
 byte    *grsegs[NUMCHUNKS];
 
@@ -150,7 +151,7 @@ int     numEpisodesMissing = 0;
 */
 
 char extension[5]; // Need a string, not constant to change cache files
-char graphext[5];
+//char graphext[5];
 //char audioext[5];
 static const char gheadname[] = "vgahead.";
 static const char gfilename[] = "vgagraph.";
@@ -171,18 +172,13 @@ huffnode *grhuffman;
 huffnode grhuffman[255];
 #endif
 
-int    grhandle = -1;               // handle to EGAGRAPH
-int    maphandle = -1;              // handle to MAPTEMP / GAMEMAPS
+static long   grhandle = -1;               // handle to EGAGRAPH
+static long   maphandle = -1;              // handle to MAPTEMP / GAMEMAPS
 //int    audiohandle = -1;            // handle to AUDIOT / AUDIO
-
-int32_t   chunkcomplen,chunkexplen;
-
-//SDMode oldsoundmode;
-
 
 static int32_t GRFILEPOS(const size_t idx)
 {
-	assert(idx < lengthof(grstarts));
+#define assert8(x) if(!(x)) { slPrint((char *)"asset test failed8", slLocate(10,20));return;}
 	return grstarts[idx];
 }
 
@@ -205,22 +201,23 @@ static int32_t GRFILEPOS(const size_t idx)
 ============================
 */
 
-void CAL_GetGrChunkLength (int chunk)
+int32_t CAL_GetGrChunkLength (int chunk)
 {
+	int32_t   chunkexplen;
     //lseek(grhandle,GRFILEPOS(chunk),SEEK_SET);
     //read(grhandle,&chunkexplen,sizeof(chunkexplen));
 
 	uint8_t *Chunks;
 	uint16_t delta = (uint16_t)(GRFILEPOS(chunk)/2048);
 	uint32_t delta2 = (GRFILEPOS(chunk) - delta*2048); 
-	Chunks=(uint8_t*)0x002F4000; //0x002F9400	
+	Chunks=(uint8_t*)SATURN_CHUNK_ADDR;
 	
 //	CHECKMALLOCRESULT(Chunks);
 	GFS_Load(grhandle, delta, (void *)Chunks, sizeof(chunkexplen)+delta2);
 	memcpy(&chunkexplen,&Chunks[delta2],sizeof(chunkexplen));
 	Chunks = NULL;
 	chunkexplen = SWAP_BYTES_32(chunkexplen);
-    chunkcomplen = GRFILEPOS(chunk+1)-GRFILEPOS(chunk)-4;
+    return GRFILEPOS(chunk+1)-GRFILEPOS(chunk)-4;
 }
 
 /*
@@ -241,6 +238,7 @@ static void CAL_HuffExpand(byte *source, byte *dest, int32_t length, huffnode *h
         Quit("length or dest is null!");
         return;
     }
+
     headptr = hufftable+254;        // head node is always node 254
 
     int written = 0;
@@ -296,11 +294,12 @@ void CAL_CarmackExpand (byte *source, word *dest, int length)
     word ch,chhigh,count,offset;
     byte *inptr;
     word *copyptr, *outptr;
+
     length/=2;
 
     inptr = (byte *) source;
     outptr = dest;
-//ch |= *inptr++;"     -> "ch |= (*inptr++) << 8;
+
     while (length>0)
     {
         ch = READWORD(inptr);
@@ -311,8 +310,7 @@ void CAL_CarmackExpand (byte *source, word *dest, int length)
             if (!count)
             {                               // have to insert a word containing the tag byte
                 ch |= *inptr++;
-                *outptr = ch;
-				outptr++;
+                *outptr++ = ch;
                 length--;
             }
             else
@@ -320,14 +318,9 @@ void CAL_CarmackExpand (byte *source, word *dest, int length)
                 offset = *inptr++;
                 copyptr = outptr - offset;
                 length -= count;
-
                 if(length<0) return;
                 while (count--)
-				{
-                    *outptr = *copyptr;
-					outptr++;
-					copyptr++;
-				}
+                    *outptr++ = *copyptr++;
             }
         }
         else if (chhigh == FARTAG)
@@ -335,9 +328,8 @@ void CAL_CarmackExpand (byte *source, word *dest, int length)
             count = ch&0xff;
             if (!count)
             {                               // have to insert a word containing the tag byte
-                 ch |= *inptr++;
-                *outptr = ch;
-				outptr++;
+                ch |= *inptr++;
+                *outptr++ = ch;
                 length --;
             }
             else
@@ -347,17 +339,12 @@ void CAL_CarmackExpand (byte *source, word *dest, int length)
                 length -= count;
                 if(length<0) return;
                 while (count--)
-				{
-                    *outptr = *copyptr;
-					outptr++;
-					copyptr++;
-				}
+                    *outptr++ = *copyptr++;
             }
         }
         else
         {
-            *outptr = ch;
-			outptr++;
+            *outptr++ = ch;
             length --;
         }
     }
@@ -478,7 +465,7 @@ void CAL_SetupGrFile (void)
 {
     char fname[13];
     //int handle;
-	unsigned int i=0;
+	unsigned int j=0;
     byte *compseg;
 	long fileSize;
 	Sint32 fileId;
@@ -495,14 +482,14 @@ void CAL_SetupGrFile (void)
 //
 
     strcpy(fname,gdictname);
-    strcat(fname,graphext);
+    strcat(fname,extension);
 
-	while (fname[i])
+	while (fname[j])
 	{
-		fname[i]= toupper(fname[i]);
-		i++;
+		fname[j]= toupper(fname[j]);
+		j++;
 	}
-	i=0;
+//	i=0;
 
     //handle = open(fname, O_RDONLY | O_BINARY);
     //if (handle == -1)
@@ -511,56 +498,64 @@ void CAL_SetupGrFile (void)
 
 	fileId = GFS_NameToId((Sint8*)fname);
 //	fileSize = GetFileSize(fileId);
-
-	Uint8 *vbtHuff;
-//	vbtHuff=(Uint8 *)malloc(sizeof(grhuffman));
-	vbtHuff=(Uint8 *)0x002C0000;;
+	compseg=(Uint8 *)SATURN_CHUNK_ADDR+0xF000;
 //	CHECKMALLOCRESULT(vbtHuff);
 
-	GFS_Load(fileId, 0, (void *)vbtHuff, sizeof(grhuffman));
-
-	for(unsigned int x=0;x<255*4;x+=4)
+	GFS_Load(fileId, 0, (void *)compseg, sizeof(grhuffman));
+	huffnode *grhuffmanptr = (huffnode *)grhuffman;
+	
+	for(unsigned char x=0;x<255;x++)
 	{
-		grhuffman[i].bit0=vbtHuff[x] | (vbtHuff[x+1]<<8);
-		grhuffman[i].bit1=vbtHuff[x+2] | (vbtHuff[x+3]<<8);
-		i++;
-	}
-
-	// VBT correct
-//	free (vbtHuff);
-	vbtHuff = NULL;
-	i=0;
+		grhuffmanptr->bit0=compseg[0] | (compseg[1]<<8);
+		grhuffmanptr->bit1=compseg[2] | (compseg[3]<<8);
+		grhuffmanptr++;
+		compseg+=4;
+	}	
+	j=0;
 
     //read(handle, grhuffman, sizeof(grhuffman));
     //close(handle);
 
     // load the data offsets from ???head.ext
     strcpy(fname,gheadname);
-    strcat(fname,graphext);
+    strcat(fname,extension);
 
-	while (fname[i])
+	while (fname[j])
 	{
-		fname[i]= toupper(fname[i]);
-		i++;
+		fname[j]= toupper(fname[j]);
+		j++;
 	}
-	i=0;
+	j=0;
 
     //handle = open(fname, O_RDONLY | O_BINARY);
     //if (handle == -1)
 //	if(stat(fname, NULL))
 //        CA_CannotOpen(fname);
+//slSynch();
 
 	fileId = GFS_NameToId((Sint8*)fname);
 	fileSize = GetFileSize(fileId);
     long headersize = fileSize;//lseek(handle, 0, SEEK_END);
     //lseek(handle, 0, SEEK_SET);
-
-    if(!param_ignorenumchunks && headersize / 3 != (long) (lengthof(grstarts) - numEpisodesMissing))
-        Quit("Wolf4SDL was not compiled for these data files:\n"
+//headersize= 157*3;
+    if(headersize / 3 != (long) (lengthof(grstarts) - numEpisodesMissing))
+	{
+/*        Quit("Wolf4SDL was not compiled for these data files:\n"
             "        %s contains a wrong number of offsets                          (%i instead of %i)!\n\n"
             "                          Please check whether you are using the right executable!\n"
             "(For mod developers: perhaps you forgot to update NUMCHUNKS?)",
             fname, headersize / 3, lengthof(grstarts) - numEpisodesMissing);
+*/
+			char msg[200];
+			sprintf(msg,"Wolf4SDL was not compiled for these data files:\n"
+            "        %s contains a wrong number of offsets                          (%i instead of %i)!\n\n"
+            "                          Please check whether you are using the right executable!\n"
+            "(For mod developers: perhaps you forgot to update NUMCHUNKS?)",
+            fname, headersize / 3, lengthof(grstarts) - numEpisodesMissing);
+			
+			slPrint((char *)msg,slLocate(1,3));
+						while(1);
+	}
 
     byte data[lengthof(grstarts) * 3];
 	//GFS_Load(fileId, 0, (void *)data, fileSize);
@@ -582,14 +577,14 @@ void CAL_SetupGrFile (void)
 // Open the graphics file, leaving it open until the game is finished
 //
     strcpy(fname,gfilename);
-    strcat(fname,graphext);
+    strcat(fname,extension);
 
-	while (fname[i])
+	while (fname[j])
 	{
-		fname[i]= toupper(fname[i]);
-		i++;
+		fname[j]= toupper(fname[j]);
+		j++;
 	}
-	i=0;
+	j=0;
 
     //grhandle = open(fname, O_RDONLY | O_BINARY);
     //if (grhandle == -1)
@@ -603,17 +598,18 @@ void CAL_SetupGrFile (void)
 //
     pictable=(pictabletype *) malloc(NUMPICS*sizeof(pictabletype));
     CHECKMALLOCRESULT(pictable);
-    CAL_GetGrChunkLength(STRUCTPIC);                // position file pointer
+    int32_t   chunkcomplen = CAL_GetGrChunkLength(STRUCTPIC);                // position file pointer
 //	compseg =(byte*)malloc((chunkcomplen));
-	compseg =(byte*)0x002C0000;
+	compseg =(byte*)SATURN_CHUNK_ADDR;
 //	CHECKMALLOCRESULT(compseg);
 	GFS_Load(grhandle, 0, (void *)compseg, (chunkcomplen));
+//    CAL_HuffExpand(&compseg[4], (byte*)pictable, NUMPICS * sizeof(pictabletype), grhuffman);
     CAL_HuffExpand(&compseg[4], (byte*)pictable, NUMPICS * sizeof(pictabletype), grhuffman);
 
-	for(unsigned long j=0;j<NUMPICS;j++)
+	for(unsigned long k=0;k<NUMPICS;k++)
 	{
-		pictable[j].height=SWAP_BYTES_16(pictable[j].height);
-		pictable[j].width=SWAP_BYTES_16(pictable[j].width);
+		pictable[k].height=SWAP_BYTES_16(pictable[k].height);
+		pictable[k].width=SWAP_BYTES_16(pictable[k].width);
 	} 
 	compseg = NULL;
 	// VBT correct
@@ -629,11 +625,10 @@ void CAL_SetupGrFile (void)
 =
 ======================
 */
-
+/*
 void CAL_SetupMapFile (void)
 {
     int     i,j;
-    int handle;
     int32_t length,pos;
     char fname[13];
 	long fileSize;
@@ -653,13 +648,13 @@ void CAL_SetupMapFile (void)
 	}	 
 	i=0;
 	fileId = GFS_NameToId((Sint8*)fname);
-	fileSize = GetFileSize(fileId); // utile
+//	fileSize = GetFileSize(fileId); // utile
     //handle = open(fname, O_RDONLY | O_BINARY);
 //    if(stat(fname, NULL))
 //        CA_CannotOpen(fname);
     length = NUMMAPS*4+2; // used to be "filelength(handle);"
 //    mapfiletype *tinf=(mapfiletype *) malloc(sizeof(mapfiletype));
-	mapfiletype *tinf=(mapfiletype *)0x002C0000;
+	mapfiletype *tinf=(mapfiletype *)SATURN_CHUNK_ADDR;
 //    CHECKMALLOCRESULT(tinf);
 	GFS_Load(fileId, 0, (void *)tinf, length);
     //read(handle, tinf, length);
@@ -706,9 +701,10 @@ void CAL_SetupMapFile (void)
 //
 // load all map header
 //
-	uint8_t *maphandleptr;
+//	uint8_t *maphandleptr;
 //	maphandleptr = (Uint8*)malloc(fileSize);
-	maphandleptr = (uint8_t*)(0x002D0000);
+//	maphandleptr = (uint8_t*)(SATURN_CHUNK_ADDR+sizeof(mapfiletype));
+	uint8_t *maphandleptr = (uint8_t*)((SATURN_CHUNK_ADDR+sizeof(mapfiletype)+ (4 - 1)) & -4);
 //	CHECKMALLOCRESULT(maphandleptr);
 	GFS_Load(maphandle, 0, (void *)maphandleptr, fileSize);
 
@@ -716,15 +712,16 @@ void CAL_SetupMapFile (void)
     {
         pos = tinf->headeroffsets[i];
         if (pos<0)                          // $FFFFFFFF start is a sparse map
-            continue;	   
+            continue;
 
-        mapheaderseg[i]=(maptype *) malloc(sizeof(maptype));
+        if(mapheaderseg[i]==NULL) mapheaderseg[i]=(maptype *) malloc(sizeof(maptype));
+//        mapheaderseg[i]=(maptype *) SATURN_CHUNK_ADDR+sizeof(mapfiletype)+fileSize+(sizeof(maptype)*i);
         CHECKMALLOCRESULT(mapheaderseg[i]);
         //lseek(maphandle,pos,SEEK_SET);
         //read (maphandle,(memptr)mapheaderseg[i],sizeof(maptype));
 		memcpy((memptr)mapheaderseg[i],&maphandleptr[pos],sizeof(maptype));
 		  
-	   for(j=0;j<3;j++)
+	   for(j=0;j<MAPPLANES;j++)
 		{
 			mapheaderseg[i]->planestart[j]=SWAP_BYTES_32(mapheaderseg[i]->planestart[j]);
 			mapheaderseg[i]->planelength[j]=SWAP_BYTES_16(mapheaderseg[i]->planelength[j]);
@@ -732,7 +729,6 @@ void CAL_SetupMapFile (void)
 		mapheaderseg[i]->width=SWAP_BYTES_16(mapheaderseg[i]->width);
 		mapheaderseg[i]->height=SWAP_BYTES_16(mapheaderseg[i]->height);
     }
-
 //	free(maphandleptr);
 	maphandleptr = NULL;	
 //    free(tinf);
@@ -742,11 +738,122 @@ void CAL_SetupMapFile (void)
 //
     for (i=0;i<MAPPLANES;i++)
     {
-        mapsegs[i]=(word *) malloc(maparea*2);
-        CHECKMALLOCRESULT(mapsegs[i]);
+		mapsegs[i]=(word *)SATURN_MAPSEG_ADDR+(0x2000*i);
+//        mapsegs[i]=(word *) malloc(maparea*2);
+//        CHECKMALLOCRESULT(mapsegs[i]);
     }
 }
+*/
+long CAL_SetupMapFile (int mapnum)
+{
+    int     i,j;
+    int32_t length,pos;
+    char fname[13];
+	long fileSize;
 
+//
+// load maphead.ext (offsets and tileinfo for map file)
+//
+    strcpy(fname,mheadname);
+    strcat(fname,extension);
+
+	Sint32 fileId;
+	i=0;
+	while (fname[i])
+	{
+		fname[i]= toupper(fname[i]);
+		i++;
+	}	 
+	i=0;
+	fileId = GFS_NameToId((Sint8*)fname);
+//	fileSize = GetFileSize(fileId); // utile
+    length = NUMMAPS*4+2; // used to be "filelength(handle);"
+//    mapfiletype *tinf=(mapfiletype *) malloc(sizeof(mapfiletype));
+	mapfiletype *tinf=(mapfiletype *)SATURN_CHUNK_ADDR;
+	GFS_Load(fileId, 0, (void *)tinf, length);
+    //read(handle, tinf, length);
+
+    tinf->RLEWtag=SWAP_BYTES_16(tinf->RLEWtag);
+	tinf->headeroffsets[mapnum]=SWAP_BYTES_32(tinf->headeroffsets[mapnum]);
+    RLEWtag=tinf->RLEWtag;
+	i=0;
+//
+// open the data file
+//
+#ifdef CARMACIZED
+    strcpy(fname, "gamemaps.");
+    strcat(fname, extension);
+
+	while (fname[i])
+	{
+		fname[i]= toupper(fname[i]);
+		i++;
+	}	 
+	maphandle = GFS_NameToId((Sint8*)fname);
+	fileSize = GetFileSize(maphandle);
+#else
+    strcpy(fname,mfilename);
+    strcat(fname,extension);
+
+    maphandle = open(fname, O_RDONLY | O_BINARY);
+    if (maphandle == -1)
+        CA_CannotOpen(fname);
+#endif
+
+//
+// load all map header
+//
+	uint8_t *maphandleptr = (uint8_t*)((SATURN_CHUNK_ADDR+sizeof(mapfiletype)+ (4 - 1)) & -4);
+	GFS_Load(maphandle, 0, (void *)maphandleptr, fileSize);
+
+//slPrintHex(fileSize,slLocate(10,14));
+
+	pos = tinf->headeroffsets[mapnum];
+	if (pos<0)                          // $FFFFFFFF start is a sparse map
+		return fileSize;
+//	if(mapheaderseg[mapnum]==NULL)	mapheaderseg[mapnum]=(maptype *) malloc(sizeof(maptype));
+#ifndef EMBEDDED
+	mapheaderseg[mapnum]=(maptype *) ((SATURN_CHUNK_ADDR+sizeof(mapfiletype)+fileSize + (8 - 1)) & -4);
+//	CHECKMALLOCRESULT(mapheaderseg[mapnum]);
+	//read (maphandle,(memptr)mapheaderseg[i],sizeof(maptype));
+	memcpy((memptr)mapheaderseg[mapnum],&maphandleptr[pos],sizeof(maptype));
+
+//
+// allocate space for 3 64*64 planes
+//
+    for (i=0;i<MAPPLANES;i++)
+    {
+		mapheaderseg[mapnum]->planestart[i]=SWAP_BYTES_32(mapheaderseg[mapnum]->planestart[i]);
+		mapheaderseg[mapnum]->planelength[i]=SWAP_BYTES_16(mapheaderseg[mapnum]->planelength[i]);		
+		mapsegs[i]=(word *)SATURN_MAPSEG_ADDR+(0x2000*i);
+//		mapsegs[i]=(word *) malloc(maparea*2);
+    }
+	mapheaderseg[mapnum]->width=SWAP_BYTES_16(mapheaderseg[mapnum]->width);
+	mapheaderseg[mapnum]->height=SWAP_BYTES_16(mapheaderseg[mapnum]->height);	
+#else
+	memcpy((memptr)&mapheaderseg,&maphandleptr[pos],sizeof(maptype));
+	
+//
+// allocate space for 3 64*64 planes
+//
+    for (i=0;i<MAPPLANES;i++)
+    {
+		mapheaderseg.planestart[i]=SWAP_BYTES_32(mapheaderseg.planestart[i]);
+		mapheaderseg.planelength[i]=SWAP_BYTES_16(mapheaderseg.planelength[i]);		
+//		mapsegs[i]=(word *)SATURN_MAPSEG_ADDR+(0x2000*i);
+		if(mapsegs[i]==NULL) mapsegs[i]=(word *) malloc(maparea*2);
+//		mapsegs[i]=(word *) malloc(maparea*2);
+    }
+	mapheaderseg.width=SWAP_BYTES_16(mapheaderseg.width);
+	mapheaderseg.height=SWAP_BYTES_16(mapheaderseg.height);	
+#endif
+
+
+	maphandleptr = NULL;	
+	tinf = NULL;
+	
+	return fileSize;
+}
 
 //==========================================================================
 
@@ -766,7 +873,8 @@ void CA_Startup (void)
     unlink ("PROFILE.TXT");
     profilehandle = open("PROFILE.TXT", O_CREAT | O_WRONLY | O_TEXT);
 #endif
-    CAL_SetupMapFile ();
+
+//    CAL_SetupMapFile ();
     CAL_SetupGrFile ();
     //CAL_SetupAudioFile ();
 
@@ -835,6 +943,7 @@ void CA_Shutdown (void)
 void CAL_ExpandGrChunk (int chunk, int32_t *source)
 {
     int32_t    expanded;
+
     if (chunk >= STARTTILE8 && chunk < STARTEXTERNS)
     {
         //
@@ -843,6 +952,7 @@ void CAL_ExpandGrChunk (int chunk, int32_t *source)
 
 #define BLOCK           64
 #define MASKBLOCK       128
+
         if (chunk<STARTTILE8M)          // tile 8s are all in one chunk!
             expanded = BLOCK*NUMTILE8;
         else if (chunk<STARTTILE16)
@@ -862,15 +972,15 @@ void CAL_ExpandGrChunk (int chunk, int32_t *source)
         // everything else has an explicit size longword
         //
         expanded = *source++;
-	expanded=SWAP_BYTES_32(expanded); 
+		expanded=SWAP_BYTES_32(expanded); 
     }
+
     //
     // allocate final space, decompress it, and free bigbuffer
     // Sprites need to have shifts made and various other junk
     //
-    grsegs[chunk]=(byte *) malloc(expanded);
+	if(grsegs[chunk]==NULL)	grsegs[chunk]=(byte *) malloc(expanded);
     CHECKMALLOCRESULT(grsegs[chunk]);
-	 
     CAL_HuffExpand((byte *) source, grsegs[chunk], expanded, grhuffman);
 }
 
@@ -901,12 +1011,13 @@ void CA_CacheGrChunk (int chunk)
 // a larger buffer
 //
     pos = GRFILEPOS(chunk);
-
     if (pos<0)                              // $FFFFFFFF start is a sparse tile
         return;
+
     next = chunk +1;
     while (GRFILEPOS(next) == -1)           // skip past any sparse tiles
         next++;
+
     compressed = GRFILEPOS(next)-pos;
     //lseek(grhandle,pos,SEEK_SET);
 		uint8_t *Chunks;
@@ -916,22 +1027,18 @@ void CA_CacheGrChunk (int chunk)
 		delta = (uint16_t)(pos/2048);
 		delta2 = (pos - delta*2048); 
 
-	Chunks=(uint8_t*)0x002F4000; //0x002F9400;  // déplacé pour pas écraser de son
+	Chunks=(uint8_t*)SATURN_CHUNK_ADDR;  // déplacé pour pas écraser de son
 //	CHECKMALLOCRESULT(Chunks);
-//slPrint((char *)"GFS_Load           ",slLocate(10,12));
-//slPrintHex(compressed+delta2,slLocate(20,13));
-//slPrintHex(&Chunks[0],slLocate(20,14));
 	GFS_Load(grhandle, delta, (void *)Chunks, compressed+delta2);
-//slPrint((char *)"GFS_Loaded1           ",slLocate(10,12));
-	
-//	Chunks+=delta2;
+	Chunks+=delta2;
 
     if (compressed<=BUFFERSIZE)
     {
 		for(i=0;i<compressed;i+=4)
 		{
 // evite des erreurs d'alignement de pointeur ?			
-			bufferseg[j++]=Chunks[3+delta2+i] | (Chunks[2+delta2+i]<<8)|(Chunks[1+delta2+i]<<16) | (Chunks[0+delta2+i]<<24);
+			bufferseg[j++]=Chunks[3] | (Chunks[2]<<8)|(Chunks[1]<<16) | (Chunks[0]<<24);
+			Chunks+=4;
 		}
         source = bufferseg;
     }
@@ -944,7 +1051,8 @@ void CA_CacheGrChunk (int chunk)
 		for(i=0;i<compressed;i+=4)
 		{
 // evite des erreurs d'alignement de pointeur ?				
-			source[j++]=Chunks[3+delta2+i] | (Chunks[2+delta2+i]<<8)|(Chunks[1+delta2+i]<<16) | (Chunks[0+delta2+i]<<24);
+			source[j++]=Chunks[3] | (Chunks[2]<<8)|(Chunks[1]<<16) | (Chunks[0]<<24);
+			Chunks+=4;
 		}	  
 		  
     }
@@ -971,24 +1079,24 @@ void CA_CacheGrChunk (int chunk)
 =
 ======================
 */
+
 void CA_CacheScreen (int chunk)
 {
     int32_t    pos,compressed,expanded;
     memptr  bigbufferseg;
     int32_t    *source;
     int             next;
+
 //
 // load the chunk into a buffer
 //
     pos = GRFILEPOS(chunk);
     next = chunk +1;
-
     while (GRFILEPOS(next) == -1)           // skip past any sparse tiles
         next++;
     compressed = GRFILEPOS(next)-pos;
-
  //#ifdef VBT
-
+//CA_CacheScreen (TITLEPIC);
     //lseek(grhandle,pos,SEEK_SET);
 //    bigbufferseg=malloc(compressed);
 //    CHECKMALLOCRESULT(bigbufferseg);
@@ -999,11 +1107,10 @@ void CA_CacheScreen (int chunk)
 	uint32_t delta2;
 	delta = (uint16_t)(pos/2048);
 	delta2 = (pos - delta*2048); 
-	Chunks=(uint8_t*)0x002F0000;
-	bigbufferseg=(uint8_t*)0x002E0000;
-
+	Chunks=(uint8_t*)SATURN_CHUNK_ADDR+0x4000;
+	bigbufferseg=(uint8_t*)screen->pixels;
 	GFS_Load(grhandle, delta, (void *)Chunks, compressed+delta2);
-	memcpy(bigbufferseg,&Chunks[delta2],compressed);
+	memcpy(bigbufferseg,(const void *)&Chunks[delta2],compressed);
 	Chunks = NULL;
 	
     source = (int32_t *) bigbufferseg;
@@ -1016,24 +1123,30 @@ void CA_CacheScreen (int chunk)
 // Sprites need to have shifts made and various other junk
 //
 //    byte *pic = (byte *) malloc(64000);
-	byte *pic = (byte *)0x002F0000;
-    CAL_HuffExpand((byte *) source, pic, expanded, grhuffman);
+	byte *pic = (byte *)SATURN_CHUNK_ADDR;
+    CAL_HuffExpand((byte *) source, (byte *)pic, expanded, grhuffman);
 
-    byte *vbuf = LOCK();
-    for(int y = 0, scy = 0; y < 200; y++, scy += scaleFactor)
+	byte *vbuf = LOCK();
+
+    for(unsigned int y = 0; y < 200; y++)
     {
-        for(int x = 0, scx = 0; x < 320; x++, scx += scaleFactor)
+        for(unsigned int x = 0; x < SATURN_WIDTH; x++)
         {
             byte col = pic[(y * 80 + (x >> 2)) + (x & 3) * 80 * 200];
-            for(unsigned i = 0; i < scaleFactor; i++)
+			byte *vbufptr= (byte *)(vbuf+(y* curPitch +x) *scaleFactor);
+
+			for(unsigned i = 0; i < scaleFactor; i++)
+			{
                 for(unsigned j = 0; j < scaleFactor; j++)
-                    vbuf[(scy + i) * curPitch + scx + j] = col;
+					*vbufptr++=col;
+				vbufptr+=curPitch;
+			}
         }
     }
     UNLOCK();
+	
 	pic = NULL;
 	bigbufferseg = NULL;
-	
 #ifdef HEAP_WALK	
 heapWalk();
 #endif	
@@ -1064,25 +1177,29 @@ void CA_CacheMap (int mapnum)
     word     *buffer2seg;
     int32_t   expanded;
 #endif
-
     mapon = mapnum;
 
+	long fileSize = CAL_SetupMapFile(mapnum);
 //
 // load the planes into the allready allocated buffers
 //
     size = maparea*2;
-	long fileSize = GetFileSize(maphandle);
-	uint8_t *Chunks=(uint8_t*)0x002F4000; //0x002F9400;   // écrase les sons
+	uint8_t *Chunks=(uint8_t*)SATURN_CHUNK_ADDR;   // écrase les sons
+//	uint8_t *Chunks=(uint8_t*)malloc(fileSize);   // écrase les sons
+//slPrintHex(maphandle,slLocate(10,19));
+//slPrintHex(fileSize,slLocate(10,20));
 
 	GFS_Load(maphandle, 0, (void *)Chunks, fileSize);
 	
     for (plane = 0; plane<MAPPLANES; plane++)
     {
+#ifndef EMBEDDED		
         pos = mapheaderseg[mapnum]->planestart[plane];
-		uint16_t delta = (uint16_t)(pos/2048);
-		uint32_t delta2 = (pos - delta*2048); 
-		
         compressed = mapheaderseg[mapnum]->planelength[plane];
+#else
+        pos = mapheaderseg.planestart[plane];
+        compressed = mapheaderseg.planelength[plane];
+#endif
         dest = mapsegs[plane];
 
         //lseek(maphandle,pos,SEEK_SET);
@@ -1092,14 +1209,14 @@ void CA_CacheMap (int mapnum)
 		}
         else
         {
-            bigbufferseg=malloc(compressed);
-            CHECKMALLOCRESULT(bigbufferseg);
-            source = (byte *) bigbufferseg;
+//            bigbufferseg=malloc(compressed);
+//            CHECKMALLOCRESULT(bigbufferseg);
+//            source = (byte *) bigbufferseg;
+			  source = (byte *) SATURN_CHUNK_ADDR+0X8000;
         }
 		memcpy(source,&Chunks[pos],compressed);
         //read(maphandle,source,compressed);
 #ifdef CARMACIZED
-
 
         //
         // unhuffman, then unRLEW
@@ -1109,17 +1226,21 @@ void CA_CacheMap (int mapnum)
         //
         //expanded = *source;
 		expanded = source[0] | (source[1] << 8);	
-        source++;
-		source++;
+		source+=2;
+//      source++;
+//		source++;
+//       buffer2seg = (word *) (SATURN_MAPSEG_ADDR-0X8000);
         buffer2seg = (word *) malloc(expanded);
-
+		
+	int *val = (int *)buffer2seg;		
+slPrintHex((int)val,slLocate(10,21));
         CHECKMALLOCRESULT(buffer2seg);
         CAL_CarmackExpand((byte *) source, buffer2seg,expanded);
 		// VBT valeur perdue ?????
 //	   RLEWtag=0xabcd;
         CA_RLEWexpand(buffer2seg+1,dest,size,RLEWtag);
-        free(buffer2seg);
-
+       free(buffer2seg);
+		buffer2seg = NULL;
 #else
         //
         // unRLEW, skipping expanded length
@@ -1127,10 +1248,18 @@ void CA_CacheMap (int mapnum)
         CA_RLEWexpand (source+1,dest,size,RLEWtag);
 #endif
 
-        if (compressed>BUFFERSIZE)
+//        if (compressed>BUFFERSIZE)
+		if(bigbufferseg!=NULL)
+		{
             free(bigbufferseg);
-//			bigbufferseg = NULL;
+			bigbufferseg = NULL;
+		}
     }
+//	free(mapheaderseg[mapnum]);
+#ifndef EMBEDDED
+	mapheaderseg[mapnum]=NULL;
+#endif	
+//	free(Chunks);
 	Chunks = NULL;
 }
 

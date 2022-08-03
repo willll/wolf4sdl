@@ -20,7 +20,8 @@ extern  unsigned scaleFactor;
 extern	boolean  screenfaded;
 //extern	unsigned bordercolor;
 
-extern SDL_Color gamepal[256];
+extern SDL_Color gamepal[];
+void wait_vblank(int nb);
 
 //===========================================================================
 
@@ -28,7 +29,7 @@ extern SDL_Color gamepal[256];
 // VGA hardware routines
 //
 
-#define VL_WaitVBL(a) //SDL_Delay((a)*8)
+#define VL_WaitVBL(a)	wait_vblank(a*1)  //SDL_Delay((a)*8)
 
 void VL_SetVGAPlaneMode (void);
 void VL_SetTextMode (void);
@@ -44,7 +45,8 @@ void VL_FadeOut     (int start, int end, int red, int green, int blue, int steps
 void VL_FadeIn      (int start, int end, SDL_Color *palette, int steps);
 
 byte *VL_LockSurface(SDL_Surface *surface);
-void VL_UnlockSurface(SDL_Surface *surface);
+//void VL_UnlockSurface(SDL_Surface *surface);
+#define VL_UnlockSurface(surface) SDL_UnlockSurface(surface)
 
 #define LOCK() VL_LockSurface(curSurface)
 #define UNLOCK() VL_UnlockSurface(curSurface)
@@ -96,6 +98,8 @@ void inline VL_LatchToScreenScaledCoord (SDL_Surface *source, int scx, int scy)
 }
 void inline VL_LatchToScreen (SDL_Surface *source, int x, int y)
 {
-    VL_LatchToScreenScaledCoord(source,0,0,source->w,source->h,
+   VL_LatchToScreenScaledCoord(source,0,0,source->w,source->h,
         scaleFactor*x,scaleFactor*y);
 }
+void VL_LatchToScreenScaledCoordIndirect(SDL_Surface *source, int scxdest, int scydest);
+

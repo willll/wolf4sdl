@@ -32,16 +32,12 @@
 //
 // configuration variables
 //
-//boolean MousePresent;
-
 
 // 	Global variables
 volatile boolean    Keyboard[SDLK_LAST];
 volatile boolean	Paused;
-volatile char		LastASCII;
 volatile ScanCode	LastScan;
 
-//KeyboardDef	KbdDefs = {0x1d,0x38,0x47,0x48,0x49,0x4b,0x4d,0x4f,0x50,0x51};
 static KeyboardDef KbdDefs = {
     sc_Control,             // button0
     sc_Alt,                 // button1
@@ -54,6 +50,7 @@ static KeyboardDef KbdDefs = {
     sc_DownArrow,           // down
     sc_PgDn                 // downright
 };
+
 /*
 =============================================================================
 
@@ -61,44 +58,6 @@ static KeyboardDef KbdDefs = {
 
 =============================================================================
 */
-byte        ASCIINames[] =		// Unshifted ASCII for scan codes       // TODO: keypad
-{
-//	 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
-	0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,8  ,9  ,0  ,0  ,0  ,13 ,0  ,0  ,	// 0
-    0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,27 ,0  ,0  ,0  ,	// 1
-	' ',0  ,0  ,0  ,0  ,0  ,0  ,39 ,0  ,0  ,'*','+',',','-','.','/',	// 2
-	'0','1','2','3','4','5','6','7','8','9',0  ,';',0  ,'=',0  ,0  ,	// 3
-	'`','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o',	// 4
-	'p','q','r','s','t','u','v','w','x','y','z','[',92 ,']',0  ,0  ,	// 5
-	0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,	// 6
-	0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0		// 7
-};
-byte ShiftNames[] =		// Shifted ASCII for scan codes
-{
-//	 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
-	0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,8  ,9  ,0  ,0  ,0  ,13 ,0  ,0  ,	// 0
-    0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,27 ,0  ,0  ,0  ,	// 1
-	' ',0  ,0  ,0  ,0  ,0  ,0  ,34 ,0  ,0  ,'*','+','<','_','>','?',	// 2
-	')','!','@','#','$','%','^','&','*','(',0  ,':',0  ,'+',0  ,0  ,	// 3
-	'~','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O',	// 4
-	'P','Q','R','S','T','U','V','W','X','Y','Z','{','|','}',0  ,0  ,	// 5
-	0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,	// 6
-	0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0		// 7
-};
-byte SpecialNames[] =	// ASCII for 0xe0 prefixed codes
-{
-//	 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
-	0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,	// 0
-	0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,13 ,0  ,0  ,0  ,	// 1
-	0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,	// 2
-	0  ,0  ,0  ,0  ,0  ,'/',0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,	// 3
-	0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,	// 4
-	0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,	// 5
-	0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,	// 6
-	0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0   	// 7
-};
-
-
 static	boolean		IN_Started;
 
 static	Direction	DirTable[] =		// Quick lookup for total direction
@@ -120,50 +79,16 @@ static void processEvent(SDL_Event *event)
         case SDL_KEYDOWN:
         {
             LastScan = event->key.keysym.sym;
-//            SDLMod mod = SDL_GetModState();
-            if(Keyboard[sc_Alt])
-            {
-                if(LastScan==SDLK_F4)
-                    Quit(NULL);
-            }
 
             if(LastScan == SDLK_KP_ENTER) LastScan = SDLK_RETURN;
             else if(LastScan == SDLK_RSHIFT) LastScan = SDLK_LSHIFT;
             else if(LastScan == SDLK_RALT) LastScan = SDLK_LALT;
             else if(LastScan == SDLK_RCTRL) LastScan = SDLK_LCTRL;
-            else
-            {
-//                if((mod & KMOD_NUM) == 0)
-                {
-                    switch(LastScan)
-                    {
-                        case SDLK_KP2: LastScan = SDLK_DOWN; break;
-                        case SDLK_KP4: LastScan = SDLK_LEFT; break;
-                        case SDLK_KP6: LastScan = SDLK_RIGHT; break;
-                        case SDLK_KP8: LastScan = SDLK_UP; break;
-                    }
-                }
-            }
-			//LastScan = SDLK_RETURN;
 
-            int sym = LastScan;
-           /* if(sym >= 'a' && sym <= 'z')
-                sym -= 32;  // convert to uppercase
-		  */
-  /*          if(mod & (KMOD_SHIFT | KMOD_CAPS))
-            {
-                if(sym < lengthof(ShiftNames) && ShiftNames[sym])
-                    LastASCII = ShiftNames[sym];
-            }
-            else*/
-            {
-                if(sym < lengthof(ASCIINames) && ASCIINames[sym])
-                    LastASCII = ASCIINames[sym];
-            }
             if(LastScan<SDLK_LAST)
                 Keyboard[LastScan] = 1;
-            if(LastScan == SDLK_PAUSE)
-                Paused = true;
+//            if(LastScan == SDLK_PAUSE)
+//                Paused = true;
             break;
 		}
 
@@ -174,19 +99,6 @@ static void processEvent(SDL_Event *event)
             else if(key == SDLK_RSHIFT) key = SDLK_LSHIFT;
             else if(key == SDLK_RALT) key = SDLK_LALT;
             else if(key == SDLK_RCTRL) key = SDLK_LCTRL;			   
-            else
-            {
-//                if((SDL_GetModState() & KMOD_NUM) == 0)
-                {
-                    switch(key)
-                    {
-                        case SDLK_KP2: key = SDLK_DOWN; break;
-                        case SDLK_KP4: key = SDLK_LEFT; break;
-                        case SDLK_KP6: key = SDLK_RIGHT; break;
-                        case SDLK_KP8: key = SDLK_UP; break;
-                    }
-                }
-            } 
 
             if(key<SDLK_LAST)
                 Keyboard[key] = 0;
@@ -208,23 +120,29 @@ static void processEvent(SDL_Event *event)
 void IN_WaitAndProcessEvents()
 {
     SDL_Event event;
-	SDL_PollEvent(&event);
+	SDL_PollEvent(0,13,&event);
 //    if(!SDL_WaitEvent(&event)) return;
 //    do
     {
         processEvent(&event);
     }
 //    while(SDL_PollEvent(&event));
+	IN_ClearKeysDown();
 }
 
 void IN_ProcessEvents()
 {
-    SDL_Event event;
-	SDL_PollEvent(&event);
-    //while (SDL_PollEvent(&event))
-    {
-        processEvent(&event);
-    }
+    SDL_Event event1,event2,event3,event4;
+
+	SDL_PollEvent(10,13,&event1);
+    processEvent(&event1);
+	SDL_PollEvent(4,8,&event3);
+    processEvent(&event3);
+	SDL_PollEvent(0,4,&event4);
+    processEvent(&event4);
+	SDL_PollEvent(8,10,&event2);
+    processEvent(&event2);
+//	IN_ClearKeysDown();
 }
 
 
@@ -247,6 +165,7 @@ IN_Startup(void)
 //	IN_Shutdown() - Shuts down the Input Mgr
 //
 ///////////////////////////////////////////////////////////////////////////
+/*
 void
 IN_Shutdown(void)
 {
@@ -254,7 +173,7 @@ IN_Shutdown(void)
 		return;
 	IN_Started = false;
 }
-
+*/
 ///////////////////////////////////////////////////////////////////////////
 //
 //	IN_ClearKeysDown() - Clears the keyboard array
@@ -264,7 +183,6 @@ void
 IN_ClearKeysDown(void)
 {
 	LastScan = sc_None;
-	LastASCII = key_None;
 	memset ((void *) Keyboard,0,sizeof(Keyboard));
 }
 
@@ -332,6 +250,7 @@ IN_ReadControl(int player,ControlInfo *info)
 //		returns the scan code
 //
 ///////////////////////////////////////////////////////////////////////////
+/*
 ScanCode
 IN_WaitForKey(void)
 {
@@ -342,7 +261,7 @@ IN_WaitForKey(void)
 	LastScan = 0;
 	return(result);
 }
-
+*/
 ///////////////////////////////////////////////////////////////////////////
 //
 //	IN_Ack() - waits for a button or key press.  If a button is down, upon
