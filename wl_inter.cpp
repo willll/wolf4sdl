@@ -1,7 +1,6 @@
 // WL_INTER.C
 
 #include "wl_def.h"
-#pragma hdrstop
 
 LRstruct LevelRatios[LRpack];
 int32_t lastBreathTime = 0;
@@ -17,13 +16,12 @@ void Write (int x, int y, const char *string);
 =
 ==================
 */
-
 void
 ClearSplitVWB (void)
 {
     WindowX = 0;
     WindowY = 0;
-    WindowW = 320;
+    WindowW = SATURN_WIDTH;
     WindowH = 160;
 }
 
@@ -43,7 +41,9 @@ EndScreen (int palette, int screen)
 {
     SDL_Color pal[256];
     CA_CacheScreen (screen);
+#ifndef USE_SPRITES	
     VW_UpdateScreen ();
+#endif	
     CA_CacheGrChunk (palette);
     VL_ConvertPalette(grsegs[palette], pal, 256);
     VL_FadeIn (0, 255, pal, 30);
@@ -62,7 +62,9 @@ EndSpear (void)
     EndScreen (END1PALETTE, ENDSCREEN11PIC);
 
     CA_CacheScreen (ENDSCREEN3PIC);
+#ifndef USE_SPRITES	
     VW_UpdateScreen ();
+#endif	
     CA_CacheGrChunk (END3PALETTE);
     VL_ConvertPalette(grsegs[END3PALETTE], pal, 256);
     VL_FadeIn (0, 255, pal, 30);
@@ -70,20 +72,24 @@ EndSpear (void)
     fontnumber = 0;
     fontcolor = 0xd0;
     WindowX = 0;
-    WindowW = 320;
+    WindowW = SATURN_WIDTH;
     PrintX = 0;
     PrintY = 180;
     US_CPrint (STR_ENDGAME1 "\n");
     US_CPrint (STR_ENDGAME2);
+#ifndef USE_SPRITES	
     VW_UpdateScreen ();
+#endif	
     IN_UserInput(700);
 
     PrintX = 0;
     PrintY = 180;
-    VWB_Bar (0, 180, 320, 20, 0);
+    VWB_Bar (0, 180, SATURN_WIDTH, 20, 0);
     US_CPrint (STR_ENDGAME3 "\n");
     US_CPrint (STR_ENDGAME4);
+#ifndef USE_SPRITES	
     VW_UpdateScreen ();
+#endif	
     IN_UserInput(700);
 
     VW_FadeOut ();
@@ -124,8 +130,7 @@ Victory (void)
 #define RATIOY  14
 #define TIMEX   14
 #define TIMEY   8
-
-
+	
 #ifdef SPEAR
     StartCPMusic (XTHEEND_MUS);
 
@@ -134,7 +139,7 @@ Victory (void)
     CA_CacheGrChunk (BJCOLLAPSE3PIC);
     CA_CacheGrChunk (BJCOLLAPSE4PIC);
 
-    VWB_Bar (0, 0, 320, 200, VIEWCOLOR);
+    VWB_Bar (0, 0, SATURN_WIDTH, 200, VIEWCOLOR);
     VWB_DrawPic (124, 44, BJCOLLAPSE1PIC);
     VW_UpdateScreen ();
     VW_FadeIn ();
@@ -165,7 +170,7 @@ Victory (void)
     CA_CacheGrChunk (C_TIMECODEPIC);
 #endif
 
-    VWB_Bar (0, 0, 320, screenHeight / scaleFactor - STATUSLINES + 1, VIEWCOLOR);
+    VWB_Bar (0, 0, SATURN_WIDTH, screenHeight / scaleFactor - STATUSLINES + 1, VIEWCOLOR);
     if (bordercol != VIEWCOLOR)
         DrawStatusBorder (VIEWCOLOR);
 
@@ -197,7 +202,8 @@ Victory (void)
 #ifndef JAPDEMO
     VWB_DrawPic (8, 4, L_BJWINSPIC);
 #endif
-
+	slScrTransparent(2);
+	slSynch();
 
     for (kr = sr = tr = sec = i = 0; i < LRpack; i++)
     {
@@ -233,17 +239,18 @@ Victory (void)
     VWB_DrawPic (i, TIMEY * 8, L_NUM0PIC + (sec / 10));
     i += 2 * 8;
     VWB_DrawPic (i, TIMEY * 8, L_NUM0PIC + (sec % 10));
+#ifndef USE_SPRITES	
     VW_UpdateScreen ();
-
-    itoa (kr, tempstr, 10);
+#endif
+    itoa (kr, tempstr);
     x = RATIOX + 24 - (int) strlen(tempstr) * 2;
     Write (x, RATIOY, tempstr);
 
-    itoa (sr, tempstr, 10);
+    itoa (sr, tempstr);
     x = RATIOX + 24 - (int) strlen(tempstr) * 2;
     Write (x, RATIOY + 2, tempstr);
 
-    itoa (tr, tempstr, 10);
+    itoa (tr, tempstr);
     x = RATIOX + 24 - (int) strlen(tempstr) * 2;
     Write (x, RATIOY + 4, tempstr);
 
@@ -272,8 +279,9 @@ Victory (void)
 #endif
 
     fontnumber = 1;
-
+#ifndef USE_SPRITES
     VW_UpdateScreen ();
+#endif	
     VW_FadeIn ();
 
     IN_Ack ();
@@ -295,41 +303,6 @@ Victory (void)
 
 #endif // SPEARDEMO
 }
-
-
-//==========================================================================
-
-#ifndef JAPAN
-/*
-==================
-=
-= PG13
-=
-==================
-*/
-/*
-void
-PG13 (void)
-{
-    VW_FadeOut ();
-    VWB_Bar (0, 0, 320, 200, 0x82);     // background
-
-    CA_CacheGrChunk (PG13PIC);
-    VWB_DrawPic (216, 110, PG13PIC);
-    VW_UpdateScreen ();
-
-    UNCACHEGRCHUNK (PG13PIC);
-
-    VW_FadeIn ();
-	// VBT déplacé
-	StartCPMusic(INTROSONG);
-    IN_UserInput (TickBase * 7);
-
-    VW_FadeOut ();
-}
-*/
-#endif
-
 
 //==========================================================================
 
@@ -412,7 +385,9 @@ BJ_Breathe (void)
     {
         which ^= 1;
         VWB_DrawPic (0, 16, pics[which]);
+#ifndef USE_SPRITES		
         VW_UpdateScreen ();
+#endif		
         lastBreathTime = GetTimeCount();
         max = 35;
     }
@@ -562,10 +537,11 @@ LevelCompleted (void)
     };
     CacheLump (LEVELEND_LUMP_START, LEVELEND_LUMP_END);
     ClearSplitVWB ();           // set up for double buffering in split screen
-	slBack1ColSet((void *)BACK_COL_ADR , 0);	
-	slScrTransparent(NBG1OFF);
+//	slBack1ColSet((void *)BACK_COL_ADR , 0);
+	slScrTransparent(2);
 	slSynch();
-    VWB_Bar (0, 0, 320, screenHeight / scaleFactor - STATUSLINES + 1, VIEWCOLOR);
+		
+    VWB_Bar (0, 0, SATURN_WIDTH, screenHeight / scaleFactor - STATUSLINES + 1, VIEWCOLOR);
     if (bordercol != VIEWCOLOR)
         DrawStatusBorder (VIEWCOLOR);
     StartCPMusic (ENDLEVEL_MUS);
@@ -611,7 +587,7 @@ LevelCompleted (void)
         Write (1, 18, STR_RAT2TREASURE);
 #endif
 
-        Write (26, 2, itoa (gamestate.mapon + 1, tempstr, 10));
+        Write (26, 2, itoa (gamestate.mapon + 1, tempstr));
 #endif
 
 #ifdef SPANISH
@@ -648,8 +624,9 @@ LevelCompleted (void)
         VWB_DrawPic (i, 10 * 8, L_NUM0PIC + (sec / 10));
         i += 2 * 8;
         VWB_DrawPic (i, 10 * 8, L_NUM0PIC + (sec % 10));
-
+#ifndef USE_SPRITES
         VW_UpdateScreen ();
+#endif		
         VW_FadeIn ();
 
         //
@@ -672,20 +649,22 @@ LevelCompleted (void)
         {
             for (i = 0; i <= timeleft; i++)
             {
-                ltoa ((int32_t) i * PAR_AMOUNT, tempstr, 10);
+                ltoa ((int32_t) i * PAR_AMOUNT, tempstr);
                 x = 36 - (int) strlen(tempstr) * 2;
                 Write (x, 7, tempstr);
                 if (!(i % (PAR_AMOUNT / 10)))
                     SD_PlaySound (ENDBONUS1SND);
+#ifndef USE_SPRITES				
                 VW_UpdateScreen ();
+#endif				
                 while (SD_SoundPlaying ())
                     BJ_Breathe ();
                 if (IN_CheckAck ())
                     goto done;
             }
-
+#ifndef USE_SPRITES
             VW_UpdateScreen ();
-
+#endif
             SD_PlaySound (ENDBONUS2SND);
             while (SD_SoundPlaying ())
                 BJ_Breathe ();
@@ -703,12 +682,14 @@ LevelCompleted (void)
         ratio = kr;
         for (i = 0; i <= ratio; i++)
         {
-            itoa (i, tempstr, 10);
+            itoa (i, tempstr);
             x = RATIOXX - (int) strlen(tempstr) * 2;
             Write (x, 14, tempstr);
             if (!(i % 10))
                 SD_PlaySound (ENDBONUS1SND);
+#ifndef USE_SPRITES			
             VW_UpdateScreen ();
+#endif			
             while (SD_SoundPlaying ())
                 BJ_Breathe ();
 
@@ -720,10 +701,12 @@ LevelCompleted (void)
             VW_WaitVBL (VBLWAIT);
             SD_StopSound ();
             bonus += PERCENT100AMT;
-            ltoa (bonus, tempstr, 10);
+            ltoa (bonus, tempstr);
             x = (RATIOXX - 1) - (int) strlen(tempstr) * 2;
             Write (x, 7, tempstr);
+#ifndef USE_SPRITES			
             VW_UpdateScreen ();
+#endif			
             SD_PlaySound (PERCENT100SND);
         }
         else if (!ratio)
@@ -734,8 +717,9 @@ LevelCompleted (void)
         }
         else
             SD_PlaySound (ENDBONUS2SND);
-
+#ifndef USE_SPRITES
         VW_UpdateScreen ();
+#endif		
         while (SD_SoundPlaying ())
             BJ_Breathe ();
 
@@ -745,15 +729,16 @@ LevelCompleted (void)
         ratio = sr;
         for (i = 0; i <= ratio; i++)
         {
-            itoa (i, tempstr, 10);
+            itoa (i, tempstr);
             x = RATIOXX - (int) strlen(tempstr) * 2;
             Write (x, 16, tempstr);
             if (!(i % 10))
                 SD_PlaySound (ENDBONUS1SND);
+#ifndef USE_SPRITES			
             VW_UpdateScreen ();
+#endif			
             while (SD_SoundPlaying ())
                 BJ_Breathe ();
-            BJ_Breathe ();
 
             if (IN_CheckAck ())
                 goto done;
@@ -763,10 +748,12 @@ LevelCompleted (void)
             VW_WaitVBL (VBLWAIT);
             SD_StopSound ();
             bonus += PERCENT100AMT;
-            ltoa (bonus, tempstr, 10);
+            ltoa (bonus, tempstr);
             x = (RATIOXX - 1) - (int) strlen(tempstr) * 2;
             Write (x, 7, tempstr);
+#ifndef USE_SPRITES			
             VW_UpdateScreen ();
+#endif			
             SD_PlaySound (PERCENT100SND);
         }
         else if (!ratio)
@@ -777,7 +764,9 @@ LevelCompleted (void)
         }
         else
             SD_PlaySound (ENDBONUS2SND);
+#ifndef USE_SPRITES		
         VW_UpdateScreen ();
+#endif		
         while (SD_SoundPlaying ())
             BJ_Breathe ();
 
@@ -787,12 +776,14 @@ LevelCompleted (void)
         ratio = tr;
         for (i = 0; i <= ratio; i++)
         {
-            itoa (i, tempstr, 10);
+            itoa (i, tempstr);
             x = RATIOXX - (int) strlen(tempstr) * 2;
             Write (x, 18, tempstr);
             if (!(i % 10))
                 SD_PlaySound (ENDBONUS1SND);
+#ifndef USE_SPRITES			
             VW_UpdateScreen ();
+#endif			
             while (SD_SoundPlaying ())
                 BJ_Breathe ();
 
@@ -804,10 +795,12 @@ LevelCompleted (void)
             VW_WaitVBL (VBLWAIT);
             SD_StopSound ();
             bonus += PERCENT100AMT;
-            ltoa (bonus, tempstr, 10);
+            ltoa (bonus, tempstr);
             x = (RATIOXX - 1) - (int) strlen(tempstr) * 2;
             Write (x, 7, tempstr);
+#ifndef USE_SPRITES			
             VW_UpdateScreen ();
+#endif			
             SD_PlaySound (PERCENT100SND);
         }
         else if (!ratio)
@@ -818,7 +811,9 @@ LevelCompleted (void)
         }
         else
             SD_PlaySound (ENDBONUS2SND);
+#ifndef USE_SPRITES		
         VW_UpdateScreen ();
+#endif		
         while (SD_SoundPlaying ())
             BJ_Breathe ();
 
@@ -826,15 +821,15 @@ LevelCompleted (void)
         //
         // JUMP STRAIGHT HERE IF KEY PRESSED
         //
-done:   itoa (kr, tempstr, 10);
+done:   itoa (kr, tempstr);
         x = RATIOXX - (int) strlen(tempstr) * 2;
         Write (x, 14, tempstr);
 
-        itoa (sr, tempstr, 10);
+        itoa (sr, tempstr);
         x = RATIOXX - (int) strlen(tempstr) * 2;
         Write (x, 16, tempstr);
 
-        itoa (tr, tempstr, 10);
+        itoa (tr, tempstr);
         x = RATIOXX - (int) strlen(tempstr) * 2;
         Write (x, 18, tempstr);
 
@@ -843,7 +838,7 @@ done:   itoa (kr, tempstr, 10);
             (PERCENT100AMT * (sr >= 100)) + (PERCENT100AMT * (tr >= 100));
 
         GivePoints (bonus);
-        ltoa (bonus, tempstr, 10);
+        ltoa (bonus, tempstr);
         x = 36 - (int) strlen(tempstr) * 2;
         Write (x, 7, tempstr);
 
@@ -886,8 +881,9 @@ done:   itoa (kr, tempstr, 10);
 #endif
 
         Write (10, 16, "15000 bonus!");
-
+#ifndef USE_SPRITES
         VW_UpdateScreen ();
+#endif		
         VW_FadeIn ();
 
         GivePoints (15000);
@@ -895,8 +891,9 @@ done:   itoa (kr, tempstr, 10);
 
 
     DrawScore ();
+#ifndef USE_SPRITES	
     VW_UpdateScreen ();
-
+#endif
     lastBreathTime = GetTimeCount();
     IN_StartAck ();
     while (!IN_CheckAck ())
@@ -942,6 +939,78 @@ done:   itoa (kr, tempstr, 10);
 	slBackColTable((void *)LINE_COLOR_TABLE);
 }
 
+/*
+=================
+=
+= PreloadGraphics
+=
+= Fill the cache up
+=
+=================
+*/
+
+boolean
+PreloadUpdate (unsigned current, unsigned total)
+{
+    unsigned w = WindowW - scaleFactor * 10;
+
+    VWB_BarScaledCoord (WindowX + scaleFactor * 5, WindowY + WindowH - scaleFactor * 3,
+        w, scaleFactor * 2, BLACK);
+    w = ((int32_t) w * current) / total;
+    if (w)
+    {
+        VWB_BarScaledCoord (WindowX + scaleFactor * 5, WindowY + WindowH - scaleFactor * 3,
+            w, scaleFactor * 2, 0x37);       //SECONDCOLOR);
+        VWB_BarScaledCoord (WindowX + scaleFactor * 5, WindowY + WindowH - scaleFactor * 3,
+            w - scaleFactor * 1, scaleFactor * 1, 0x32);
+
+    }
+#ifndef USE_SPRITES		
+    VW_UpdateScreen ();
+#endif
+//      if (LastScan == sc_Escape)
+//      {
+//              IN_ClearKeysDown();
+//              return(true);
+//      }
+//      else
+    return (false);
+}
+
+void
+PreloadGraphics (void)
+{
+    DrawLevel ();
+    ClearSplitVWB ();           // set up for double buffering in split screen
+	slScrTransparent(2);
+	slSynch();
+	
+    VWB_BarScaledCoord (0, 0, screenWidth, screenHeight - scaleFactor * (STATUSLINES - 1), bordercol);
+    LatchDrawPicScaledCoord ((screenWidth-scaleFactor*224)/16,
+        (screenHeight-scaleFactor*(STATUSLINES+48))/2, GETPSYCHEDPIC);
+
+    WindowX = (screenWidth - scaleFactor*224)/2;
+    WindowY = (screenHeight - scaleFactor*(STATUSLINES+48))/2;
+    WindowW = scaleFactor * 28 * 8;
+    WindowH = scaleFactor * 48;
+#ifndef USE_SPRITES	
+    VW_UpdateScreen ();
+#endif	
+    VW_FadeIn ();
+
+//      PM_Preload (PreloadUpdate);
+//    PreloadUpdate (10, 10);
+    IN_UserInput (70);
+    VW_FadeOut ();
+
+    DrawPlayBorder ();
+#ifndef USE_SPRITES	
+    VW_UpdateScreen ();
+#endif	
+	slScrTransparent(0);
+	slSynch();
+}
+
 
 //==========================================================================
 
@@ -956,6 +1025,9 @@ done:   itoa (kr, tempstr, 10);
 void
 DrawHighScores (void)
 {
+	slScrTransparent(2);
+	slSynch();
+	
     char buffer[16];
 #ifndef SPEAR
     char *str;
@@ -1029,7 +1101,7 @@ DrawHighScores (void)
         //
         // level
         //
-        itoa (s->completed, buffer, 10);
+        itoa (s->completed, buffer);
 #ifndef SPEAR
         for (str = buffer; *str; str++)
             *str = *str + (129 - '0');  // Used fixed-width numbers (129...)
@@ -1043,7 +1115,7 @@ DrawHighScores (void)
 #ifndef UPLOAD
 #ifndef SPEAR
         PrintX -= 6;
-        itoa (s->episode + 1, buffer1, 10);
+        itoa (s->episode + 1, buffer1);
         US_Print ("E");
         US_Print (buffer1);
         US_Print ("/L");
@@ -1060,7 +1132,7 @@ DrawHighScores (void)
         //
         // score
         //
-        itoa (s->score, buffer, 10);
+        itoa (s->score, buffer);
 #ifndef SPEAR
         for (str = buffer; *str; str++)
             *str = *str + (129 - '0');  // Used fixed-width numbers (129...)
@@ -1099,9 +1171,9 @@ DrawHighScores (void)
 //#endif
 #endif
     }
-
+#ifndef USE_SPRITES
     VW_UpdateScreen ();
-
+#endif
 #ifdef SPEAR
     UnCacheLump (HIGHSCORES_LUMP_START, HIGHSCORES_LUMP_END);
     fontnumber = 0;
@@ -1163,12 +1235,14 @@ CheckHighScore (int32_t score, word other)
         PrintX = 4 * 8;
         backcolor = BORDCOLOR;
         fontcolor = 15;
-        US_LineInput (PrintX, PrintY, Scores[n].name, 0, true, MaxHighName, 100);
+//        US_LineInput (PrintX, PrintY, Scores[n].name, 0, true, MaxHighName, 100);
 #else
         PrintX = 16;
         fontnumber = 1;
         VWB_Bar (PrintX - 2, PrintY - 2, 145, 15, 0x9c);
+#ifndef USE_SPRITES		
         VW_UpdateScreen ();
+#endif		
         backcolor = 0x9c;
         fontcolor = 15;
         US_LineInput (PrintX, PrintY, Scores[n].name, 0, true, MaxHighName, 130);
@@ -1179,7 +1253,6 @@ CheckHighScore (int32_t score, word other)
         IN_ClearKeysDown ();
         IN_UserInput (500);
     }
-
 }
 
 
@@ -1225,8 +1298,9 @@ NonShareware (void)
     US_Print ("Thanks.\n\n");
 #endif
     US_Print ("        Id Software\n");
-
+#ifndef USE_SPRITES
     VW_UpdateScreen ();
+#endif	
     VW_FadeIn ();
     IN_Ack ();
 }
@@ -1391,7 +1465,9 @@ BackDoor (char *s)
             VWB_DrawPic (0, 20 * 8, COPYPROTBOXPIC);
             US_CPrint (GoodBoyStrs[i * 2]);
             US_CPrint (GoodBoyStrs[i * 2 + 1]);
+#ifndef USE_SPRITES			
             VW_UpdateScreen ();
+#endif			
             return 1;
         }
     }
@@ -1399,7 +1475,7 @@ BackDoor (char *s)
     return 0;
 }
 
-
+#if 0
 void
 CopyProtection (void)
 {
@@ -1448,7 +1524,7 @@ CopyProtection (void)
         VWB_DrawPic (0, 0, COPYPROTTOPPIC);
         VWB_DrawPic (0, 20 * 8, COPYPROTBOXPIC);
         WindowX = WindowY = 0;
-        WindowW = 320;
+        WindowW = SATURN_WIDTH;
         WindowH = 200;
         PrintY = 65;
 
@@ -1472,8 +1548,9 @@ CopyProtection (void)
                 PrintY = 130;
                 US_CPrint (STR_ENEMY1 "\n");
                 US_CPrint (STR_ENEMY2 "\n\n");
-
+#ifndef USE_SPRITES
                 VW_UpdateScreen ();
+#endif				
                 VW_FadeIn ();
 
                 PrintX = 100;
@@ -1517,7 +1594,9 @@ CopyProtection (void)
                 US_CPrint (STR_MAN2);
                 sprintf(message, STR_MAN3 " \"%s\" " STR_MAN4, WordStr[whichword]);
                 US_CPrint (message);
+#ifndef USE_SPRITES				
                 VW_UpdateScreen ();
+#endif				
                 VW_FadeIn ();
 
                 PrintX = 146;
@@ -1650,11 +1729,12 @@ CopyProtection (void)
     }
 
     
-    ShutdownId ();
+//    ShutdownId ();
 
 //    printf ("%s\n", DosMessages[US_RndT () % 9]);
-    exit (1);
+    SYS_Exit (1);
 }
+#endif //copy
 
 #endif // SPEARDEMO
 #endif // GOODTIMES

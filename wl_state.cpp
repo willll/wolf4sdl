@@ -1,8 +1,10 @@
 // WL_STATE.C
 
 #include "wl_def.h"
-#pragma hdrstop
 
+#ifdef EMBEDDED
+extern statetype gamestates[MAXSTATES];
+#endif
 /*
 =============================================================================
 
@@ -39,7 +41,11 @@ static const dirtype diagonal[9][9] =
 
 
 
-void    SpawnNewObj (unsigned tilex, unsigned tiley, statetype *state);
+#ifdef EMBEDDED
+void SpawnNewObj(unsigned tilex, unsigned tiley, int state);
+#else
+void SpawnNewObj (unsigned tilex, unsigned tiley, statetype *state);
+#endif
 void    NewState (objtype *ob, statetype *state);
 
 boolean TryWalk (objtype *ob);
@@ -77,7 +83,45 @@ boolean CheckSight (objtype *ob);
 =
 ===================
 */
+#ifdef EMBEDDED
+void SpawnNewObj(unsigned tilex, unsigned tiley, int state) /* stateenum */
+{
+	
+	GetNewActor();
+	
+	newobj->state = state;
+	if (gamestates[state].tictime)
+		newobj->ticcount = US_RndT () % gamestates[state].tictime;
+	else
+		newobj->ticcount = 0;
 
+	newobj->tilex = tilex;
+	newobj->tiley = tiley;
+	newobj->x = ((long)tilex<<TILESHIFT)+TILEGLOBAL/2;
+	newobj->y = ((long)tiley<<TILESHIFT)+TILEGLOBAL/2;
+	newobj->dir = nodir;
+
+	actorat[tilex][tiley] = newobj->id | 0x8000;
+	newobj->areanumber =
+		*(mapsegs[0] + farmapylookup[newobj->tiley]+newobj->tilex) - AREATILE;
+/*
+	GetNewActor();
+	
+	newobj->state = state;
+	if (gamestates[state].tictime)
+		newobj->ticcount = US_RndT () % gamestates[state].tictime;
+	else
+		newobj->ticcount = 0;
+
+	newobj->tilex = tilex;
+	newobj->tiley = tiley;
+	newobj->x = ((long)tilex<<TILESHIFT)+TILEGLOBAL/2;
+	newobj->y = ((long)tiley<<TILESHIFT)+TILEGLOBAL/2;
+	newobj->dir = nodir;
+
+	move_actor(newobj);
+}
+#else
 void SpawnNewObj (unsigned tilex, unsigned tiley, statetype *state)
 {
     GetNewActor ();
@@ -98,9 +142,9 @@ void SpawnNewObj (unsigned tilex, unsigned tiley, statetype *state)
     actorat[tilex][tiley] = newobj;
     newobj->areanumber =
         *(mapsegs[0] + (newobj->tiley<<mapshift)+newobj->tilex) - AREATILE;
+*/		
 }
-
-
+#endif
 
 /*
 ===================
@@ -111,14 +155,19 @@ void SpawnNewObj (unsigned tilex, unsigned tiley, statetype *state)
 =
 ===================
 */
-
+#ifdef EMBEDDED
+void NewState (objtype *ob, int state)
+#else
 void NewState (objtype *ob, statetype *state)
+#endif
 {
     ob->state = state;
+#ifdef EMBEDDED
+	ob->ticcount = gamestates[state].tictime;
+#else	
     ob->ticcount = state->tictime;
+#endif
 }
-
-
 
 /*
 =============================================================================
@@ -152,7 +201,19 @@ void NewState (objtype *ob, statetype *state)
 =
 ==================================
 */
+#ifdef EMBEDDED
+#define CHECKDIAG(x,y)								\
+{                                               \
+	if (any_actor_at(x, y))                                       \
+	{                                               \
+		if (!obj_actor_at(x, y))                               \
+			return false;                           \
+		if (objlist[get_actor_at(x, y)].flags & FL_SHOOTABLE)  \
+			return false;                           \
+	}                                               \
+}
 
+#else
 #define CHECKDIAG(x,y)                              \
 {                                                   \
     temp=(uintptr_t)actorat[x][y];                  \
@@ -164,6 +225,7 @@ void NewState (objtype *ob, statetype *state)
             return false;                           \
     }                                               \
 }
+#endif
 
 #ifdef PLAYDEMOLIKEORIGINAL
     #define DOORCHECK                                   \
@@ -184,6 +246,23 @@ void NewState (objtype *ob, statetype *state)
             return true;
 #endif
 
+#ifdef EMBEDDED
+
+#define CHECKSIDE(x,y)								\
+{                                               \
+	if (any_actor_at(x, y))                                       \
+	{                                               \
+		if (wall_actor_at(x, y))                               \
+			return false;                           \
+		if (!obj_actor_at(x, y))                               \
+			doornum = get_actor_at(x, y);                      \
+		else if (objlist[get_actor_at(x, y)].flags & FL_SHOOTABLE) \
+			return false;                           \
+	}                                               \
+}
+
+#else
+
 #define CHECKSIDE(x,y)                                  \
 {                                                       \
     temp=(uintptr_t)actorat[x][y];                      \
@@ -199,166 +278,175 @@ void NewState (objtype *ob, statetype *state)
             return false;                               \
     }                                                   \
 }
-
-
-boolean TryWalk (objtype *ob)
-{
-    int       doornum = -1;
-    uintptr_t temp;
-
-    if (ob->obclass == inertobj)
-    {
-        switch (ob->dir)
-        {
-            case north:
-                ob->tiley--;
-                break;
-
-            case northeast:
-                ob->tilex++;
-                ob->tiley--;
-                break;
-
-            case east:
-                ob->tilex++;
-                break;
-
-            case southeast:
-                ob->tilex++;
-                ob->tiley++;
-                break;
-
-            case south:
-                ob->tiley++;
-                break;
-
-            case southwest:
-                ob->tilex--;
-                ob->tiley++;
-                break;
-
-            case west:
-                ob->tilex--;
-                break;
-
-            case northwest:
-                ob->tilex--;
-                ob->tiley--;
-                break;
-        }
-    }
-    else
-    {
-        switch (ob->dir)
-        {
-            case north:
-                if (ob->obclass == dogobj || ob->obclass == fakeobj
-                    || ob->obclass == ghostobj || ob->obclass == spectreobj)
-                {
-                    CHECKDIAG(ob->tilex,ob->tiley-1);
-                }
-                else
-                {
-                    CHECKSIDE(ob->tilex,ob->tiley-1);
-                }
-                ob->tiley--;
-                break;
-
-            case northeast:
-                CHECKDIAG(ob->tilex+1,ob->tiley-1);
-                CHECKDIAG(ob->tilex+1,ob->tiley);
-                CHECKDIAG(ob->tilex,ob->tiley-1);
-                ob->tilex++;
-                ob->tiley--;
-                break;
-
-            case east:
-                if (ob->obclass == dogobj || ob->obclass == fakeobj
-                    || ob->obclass == ghostobj || ob->obclass == spectreobj)
-                {
-                    CHECKDIAG(ob->tilex+1,ob->tiley);
-                }
-                else
-                {
-                    CHECKSIDE(ob->tilex+1,ob->tiley);
-                }
-                ob->tilex++;
-                break;
-
-            case southeast:
-                CHECKDIAG(ob->tilex+1,ob->tiley+1);
-                CHECKDIAG(ob->tilex+1,ob->tiley);
-                CHECKDIAG(ob->tilex,ob->tiley+1);
-                ob->tilex++;
-                ob->tiley++;
-                break;
-
-            case south:
-                if (ob->obclass == dogobj || ob->obclass == fakeobj
-                    || ob->obclass == ghostobj || ob->obclass == spectreobj)
-                {
-                    CHECKDIAG(ob->tilex,ob->tiley+1);
-                }
-                else
-                {
-                    CHECKSIDE(ob->tilex,ob->tiley+1);
-                }
-                ob->tiley++;
-                break;
-
-            case southwest:
-                CHECKDIAG(ob->tilex-1,ob->tiley+1);
-                CHECKDIAG(ob->tilex-1,ob->tiley);
-                CHECKDIAG(ob->tilex,ob->tiley+1);
-                ob->tilex--;
-                ob->tiley++;
-                break;
-
-            case west:
-                if (ob->obclass == dogobj || ob->obclass == fakeobj
-                    || ob->obclass == ghostobj || ob->obclass == spectreobj)
-                {
-                    CHECKDIAG(ob->tilex-1,ob->tiley);
-                }
-                else
-                {
-                    CHECKSIDE(ob->tilex-1,ob->tiley);
-                }
-                ob->tilex--;
-                break;
-
-            case northwest:
-                CHECKDIAG(ob->tilex-1,ob->tiley-1);
-                CHECKDIAG(ob->tilex-1,ob->tiley);
-                CHECKDIAG(ob->tilex,ob->tiley-1);
-                ob->tilex--;
-                ob->tiley--;
-                break;
-
-            case nodir:
-                return false;
-
-            default:
-                Quit ("Walk: Bad dir");
-        }
-    }
-
-#ifdef PLAYDEMOLIKEORIGINAL
-    if (DEMOCOND_ORIG && doornum != -1)
-    {
-        OpenDoor(doornum);
-        ob->distance = -doornum-1;
-        return true;
-    }
 #endif
 
+boolean TryWalk(objtype *ob)
+{
+	int doornum;
+	int tilex, tiley;
+
+	doornum = -1;
+
+	tilex = ob->tilex;
+	tiley = ob->tiley;
+	if (ob->obclass == inertobj)
+	{
+		switch (ob->dir)
+		{
+		case north:
+			tiley--;
+			break;
+
+		case northeast:
+			tilex++;
+			tiley--;
+			break;
+
+		case east:
+			tilex++;
+			break;
+
+		case southeast:
+			tilex++;
+			tiley++;
+			break;
+
+		case south:
+			tiley++;
+			break;
+
+		case southwest:
+			tilex--;
+			tiley++;
+			break;
+
+		case west:
+			tilex--;
+			break;
+
+		case northwest:
+			tilex--;
+			tiley--;
+			break;
+			
+		default:
+			break;
+		}
+	}
+	else
+	{
+//slPrint("active object     ",slLocate(10,10));	
+		switch (ob->dir)
+		{
+		case north:
+			if (ob->obclass == dogobj || ob->obclass == fakeobj)
+			{
+				CHECKDIAG(tilex,tiley-1);
+			}
+			else
+			{
+				CHECKSIDE(tilex,tiley-1);
+			}
+			tiley--;
+			break;
+
+		case northeast:
+			CHECKDIAG(tilex+1,tiley-1);
+			CHECKDIAG(tilex+1,tiley);
+			CHECKDIAG(tilex,tiley-1);
+			tilex++;
+			tiley--;
+			break;
+
+		case east:
+			if (ob->obclass == dogobj || ob->obclass == fakeobj)
+			{
+				CHECKDIAG(tilex+1,tiley);
+			}
+			else
+			{
+				CHECKSIDE(tilex+1,tiley);
+			}
+			tilex++;
+			break;
+
+		case southeast:
+			CHECKDIAG(tilex+1,tiley+1);
+			CHECKDIAG(tilex+1,tiley);
+			CHECKDIAG(tilex,tiley+1);
+			tilex++;
+			tiley++;
+			break;
+
+		case south:
+			if (ob->obclass == dogobj || ob->obclass == fakeobj)
+			{
+				CHECKDIAG(tilex,tiley+1);
+			}
+			else
+			{
+				CHECKSIDE(tilex,tiley+1);
+			}
+			tiley++;
+			break;
+
+		case southwest:
+			CHECKDIAG(tilex-1,tiley+1);
+			CHECKDIAG(tilex-1,tiley);
+			CHECKDIAG(tilex,tiley+1);
+			tilex--;
+			tiley++;
+			break;
+
+		case west:
+			if (ob->obclass == dogobj || ob->obclass == fakeobj)
+			{
+				CHECKDIAG(tilex-1,tiley);
+			}
+			else
+			{
+				CHECKSIDE(tilex-1,tiley);
+			}
+			tilex--;
+			break;
+
+		case northwest:
+			CHECKDIAG(tilex-1,tiley-1);
+			CHECKDIAG(tilex-1,tiley);
+			CHECKDIAG(tilex,tiley-1);
+			tilex--;
+			tiley--;
+			break;
+
+		case nodir:
+			return false;
+
+		default:
+			Quit ("Walk: Bad dir");
+		}
+	}
+
+	ob->tilex = tilex;
+	ob->tiley = tiley;
+	if (doornum != -1)
+	{
+		OpenDoor (doornum);
+		ob->distance = -doornum-1;
+		return true;
+	}
+
+
+#ifdef EMBEDDED
+	ob->areanumber =
+		*(mapsegs[0] + farmapylookup[tiley]+tilex) - AREATILE;
+#else
     ob->areanumber =
         *(mapsegs[0] + (ob->tiley<<mapshift)+ob->tilex) - AREATILE;
+#endif
 
     ob->distance = TILEGLOBAL;
     return true;
 }
-
 
 /*
 ==================================
@@ -488,7 +576,6 @@ void SelectDodgeDir (objtype *ob)
     ob->dir = nodir;
 }
 
-
 /*
 ============================
 =
@@ -598,7 +685,6 @@ void SelectChaseDir (objtype *ob)
     ob->dir = nodir;                // can't move
 }
 
-
 /*
 ============================
 =
@@ -667,7 +753,6 @@ void SelectRunDir (objtype *ob)
     ob->dir = nodir;                // can't move
 }
 
-
 /*
 =================
 =
@@ -683,109 +768,74 @@ void SelectRunDir (objtype *ob)
 =================
 */
 
-void MoveObj (objtype *ob, int32_t move)
+void MoveObj (objtype *ob, long move)
 {
-    int32_t    deltax,deltay;
+	long	deltax,deltay;
+	long	x, y;
 
-    switch (ob->dir)
-    {
-        case north:
-            ob->y -= move;
-            break;
-        case northeast:
-            ob->x += move;
-            ob->y -= move;
-            break;
-        case east:
-            ob->x += move;
-            break;
-        case southeast:
-            ob->x += move;
-            ob->y += move;
-            break;
-        case south:
-            ob->y += move;
-            break;
-        case southwest:
-            ob->x -= move;
-            ob->y += move;
-            break;
-        case west:
-            ob->x -= move;
-            break;
-        case northwest:
-            ob->x -= move;
-            ob->y -= move;
-            break;
+	x = ob->x;
+	y = ob->y;
+	switch (ob->dir)
+	{
+	case north:
+		y -= move;
+		break;
+	case northeast:
+		x += move;
+		y -= move;
+		break;
+	case east:
+		x += move;
+		break;
+	case southeast:
+		x += move;
+		y += move;
+		break;
+	case south:
+		y += move;
+		break;
+	case southwest:
+		x -= move;
+		y += move;
+		break;
+	case west:
+		x -= move;
+		break;
+	case northwest:
+		x -= move;
+		y -= move;
+		break;
 
-        case nodir:
-            return;
+	case nodir:
+		return;
 
-        default:
-            Quit ("MoveObj: bad dir!");
-    }
+	default:
+		Quit ("MoveObj: bad dir!");
+	}
 
-    //
-    // check to make sure it's not on top of player
-    //
-    if (areabyplayer[ob->areanumber])
-    {
-        deltax = ob->x - player->x;
-        if (deltax < -MINACTORDIST || deltax > MINACTORDIST)
-            goto moveok;
-        deltay = ob->y - player->y;
-        if (deltay < -MINACTORDIST || deltay > MINACTORDIST)
-            goto moveok;
+//
+// check to make sure it's not on top of player
+//
+//	if (getareabyplayer(ob->areanumber))
+	if (areabyplayer[ob->areanumber])	
+	{
+		deltax = x - player->x;
+		if (deltax < -MINACTORDIST || deltax > MINACTORDIST)
+			goto moveok;
+		deltay = y - player->y;
+		if (deltay < -MINACTORDIST || deltay > MINACTORDIST)
+			goto moveok;
 
-        if (ob->hidden)          // move closer until he meets CheckLine
-            goto moveok;
+		if (ob->obclass == ghostobj || ob->obclass == spectreobj)
+			TakeDamage (tics*2,ob);
 
-        if (ob->obclass == ghostobj || ob->obclass == spectreobj)
-            TakeDamage (tics*2,ob);
-
-        //
-        // back up
-        //
-        switch (ob->dir)
-        {
-            case north:
-                ob->y += move;
-                break;
-            case northeast:
-                ob->x -= move;
-                ob->y += move;
-                break;
-            case east:
-                ob->x -= move;
-                break;
-            case southeast:
-                ob->x -= move;
-                ob->y -= move;
-                break;
-            case south:
-                ob->y -= move;
-                break;
-            case southwest:
-                ob->x += move;
-                ob->y -= move;
-                break;
-            case west:
-                ob->x += move;
-                break;
-            case northwest:
-                ob->x += move;
-                ob->y += move;
-                break;
-
-            case nodir:
-                return;
-        }
-        return;
-    }
+		return;
+	}
 moveok:
-    ob->distance -=move;
+	ob->x = x;
+	ob->y = y;
+	ob->distance -=move;
 }
-
 /*
 =============================================================================
 
@@ -797,54 +847,157 @@ moveok:
 /*
 ===============
 =
-= DropItem
-=
-= Tries to drop a bonus item somewhere in the tiles surrounding the
-= given tilex/tiley
-=
-===============
-*/
-
-void DropItem (wl_stat_t itemtype, int tilex, int tiley)
-{
-    int     x,y,xl,xh,yl,yh;
-
-    //
-    // find a free spot to put it in
-    //
-    if (!actorat[tilex][tiley])
-    {
-        PlaceItemType (itemtype, tilex,tiley);
-        return;
-    }
-
-    xl = tilex-1;
-    xh = tilex+1;
-    yl = tiley-1;
-    yh = tiley+1;
-
-    for (x=xl ; x<= xh ; x++)
-    {
-        for (y=yl ; y<= yh ; y++)
-        {
-            if (!actorat[x][y])
-            {
-                PlaceItemType (itemtype, x,y);
-                return;
-            }
-        }
-    }
-}
-
-
-
-/*
-===============
-=
 = KillActor
 =
 ===============
 */
+
+#ifdef EMBEDDED
+void KillActor (objtype *ob)
+{
+	int	tilex,tiley;
+	int	points;
+	int	newstate;
+
+	tilex = ob->tilex = ob->x >> TILESHIFT;		// drop item on center
+	tiley = ob->tiley = ob->y >> TILESHIFT;
+
+	switch (ob->obclass)
+	{
+	case guardobj:
+		points = 100;
+		newstate = s_grddie1;
+		PlaceItemType (bo_clip2,tilex,tiley);
+		break;
+
+	case officerobj:
+		points = 400;
+		newstate = s_ofcdie1;
+		PlaceItemType (bo_clip2,tilex,tiley);
+		break;
+
+	case mutantobj:
+		points = 700;
+		newstate = s_mutdie1;
+		PlaceItemType (bo_clip2,tilex,tiley);
+		break;
+
+	case ssobj:
+		points = 500;
+		newstate = s_ssdie1;
+		if (gamestate.bestweapon < wp_machinegun)
+			PlaceItemType (bo_machinegun,tilex,tiley);
+		else
+			PlaceItemType (bo_clip2,tilex,tiley);
+		break;
+
+	case dogobj:
+		points = 200;
+		newstate = s_dogdie1;
+		break;
+
+#ifndef SPEAR
+	case bossobj:
+		points = 5000;
+		newstate = s_bossdie1;
+		PlaceItemType (bo_key1,tilex,tiley);
+		break;
+
+	case gretelobj:
+		points = 5000;
+		newstate = s_greteldie1;
+		PlaceItemType (bo_key1,tilex,tiley);
+		break;
+
+	case giftobj:
+		points = 5000;
+		gamestate.killx = player->x;
+		gamestate.killy = player->y;
+		newstate = s_giftdie1;
+		break;
+
+	case fatobj:
+		points = 5000;
+		gamestate.killx = player->x;
+		gamestate.killy = player->y;
+		newstate = s_fatdie1;
+		break;
+
+	case schabbobj:
+		points = 5000;
+		gamestate.killx = player->x;
+		gamestate.killy = player->y;
+		newstate = s_schabbdie1;
+		A_DeathScream(ob);
+		break;
+	case fakeobj:
+		points = 2000;
+		newstate = s_fakedie1;
+		break;
+
+	case mechahitlerobj:
+		points = 5000;
+		newstate = s_mechadie1;
+		break;
+	case realhitlerobj:
+		points = 5000;
+		gamestate.killx = player->x;
+		gamestate.killy = player->y;
+		newstate = s_hitlerdie1;
+		A_DeathScream(ob);
+		break;
+#else
+	case spectreobj:
+		points = 200;
+		newstate = s_spectredie1;
+		break;
+
+	case angelobj:
+		points = 5000;
+		newstate = s_angeldie1;
+		break;
+
+	case transobj:
+		points = 5000;
+		newstate = s_transdie0;
+		PlaceItemType (bo_key1,tilex,tiley);
+		break;
+
+	case uberobj:
+		points = 5000;
+		newstate = s_uberdie0;
+		PlaceItemType (bo_key1,tilex,tiley);
+		break;
+
+	case willobj:
+		points = 5000;
+		newstate = s_willdie1;
+		PlaceItemType (bo_key1,tilex,tiley);
+		break;
+
+	case deathobj:
+		points = 5000;
+		newstate = s_deathdie1;
+		PlaceItemType (bo_key1,tilex,tiley);
+		break;
+#endif
+	default:
+		points = 0;
+		newstate = ob->state;
+		break;
+	}
+
+	GivePoints(points);
+	NewState (ob, newstate);
+//#ifdef ENABLE_STATS
+	gamestate.killcount++;
+//#endif
+	ob->flags &= ~FL_SHOOTABLE;
+//	clear_actor(ob->tilex, ob->tiley);
+	actorat[ob->tilex][ob->tiley] = NULL;
+	ob->flags |= FL_NONMARK;
+}
+#else
 
 void KillActor (objtype *ob)
 {
@@ -981,7 +1134,7 @@ void KillActor (objtype *ob)
     actorat[ob->tilex][ob->tiley] = NULL;
     ob->flags |= FL_NONMARK;
 }
-
+#endif
 
 
 /*
@@ -1020,31 +1173,54 @@ void DamageActor (objtype *ob, unsigned damage)
         {
             case guardobj:
                 if (ob->hitpoints&1)
+#ifdef EMBEDDED
+                    NewState (ob,s_grdpain);
+                else
+                    NewState (ob,s_grdpain1);
+#else
                     NewState (ob,&s_grdpain);
                 else
                     NewState (ob,&s_grdpain1);
+#endif
                 break;
 
             case officerobj:
                 if (ob->hitpoints&1)
+#ifdef EMBEDDED
+                    NewState (ob,s_ofcpain);
+                else
+                    NewState (ob,s_ofcpain1);
+#else
                     NewState (ob,&s_ofcpain);
                 else
                     NewState (ob,&s_ofcpain1);
+#endif
                 break;
 
             case mutantobj:
                 if (ob->hitpoints&1)
+#ifdef EMBEDDED
+                    NewState (ob,s_mutpain);
+                else
+                    NewState (ob,s_mutpain1);
+#else
                     NewState (ob,&s_mutpain);
                 else
                     NewState (ob,&s_mutpain1);
+#endif
                 break;
 
             case ssobj:
                 if (ob->hitpoints&1)
+#ifdef EMBEDDED
+                    NewState (ob,s_sspain);
+                else
+                    NewState (ob,s_sspain1);
+#else
                     NewState (ob,&s_sspain);
                 else
                     NewState (ob,&s_sspain1);
-
+#endif
                 break;
         }
     }
@@ -1199,7 +1375,6 @@ boolean CheckLine (objtype *ob)
     return true;
 }
 
-
 /*
 ================
 =
@@ -1290,7 +1465,6 @@ boolean CheckSight (objtype *ob)
     return CheckLine (ob);
 }
 
-
 /*
 ===============
 =
@@ -1311,121 +1485,201 @@ void FirstSighting (objtype *ob)
     {
         case guardobj:
             SD_PlaySound(HALTSND);
+#ifdef EMBEDDED
+            NewState (ob,s_grdchase1);
+#else
             NewState (ob,&s_grdchase1);
+#endif
             ob->speed *= 3;                 // go faster when chasing player
             break;
 
         case officerobj:
             SD_PlaySound(SPIONSND);
+#ifdef EMBEDDED
+            NewState (ob,s_ofcchase1);
+#else
             NewState (ob,&s_ofcchase1);
+#endif
             ob->speed *= 5;                 // go faster when chasing player
             break;
 
         case mutantobj:
+#ifdef EMBEDDED
+            NewState (ob,s_mutchase1);
+#else
             NewState (ob,&s_mutchase1);
+#endif
             ob->speed *= 3;                 // go faster when chasing player
             break;
 
         case ssobj:
             SD_PlaySound(SCHUTZADSND);
+#ifdef EMBEDDED
+            NewState (ob,s_sschase1);
+#else
             NewState (ob,&s_sschase1);
+#endif
             ob->speed *= 4;                 // go faster when chasing player
             break;
 
         case dogobj:
             SD_PlaySound(DOGBARKSND);
+#ifdef EMBEDDED
+            NewState (ob,s_dogchase1);
+#else
             NewState (ob,&s_dogchase1);
+#endif
             ob->speed *= 2;                 // go faster when chasing player
             break;
 
 #ifndef SPEAR
         case bossobj:
             SD_PlaySound(GUTENTAGSND);
+#ifdef EMBEDDED
+            NewState (ob,s_bosschase1);
+#else
             NewState (ob,&s_bosschase1);
+#endif
             ob->speed = SPDPATROL*3;        // go faster when chasing player
             break;
 
 #ifndef APOGEE_1_0
         case gretelobj:
             SD_PlaySound(KEINSND);
+#ifdef EMBEDDED
+            NewState (ob,s_gretelchase1);
+#else
             NewState (ob,&s_gretelchase1);
+#endif
             ob->speed *= 3;                 // go faster when chasing player
             break;
 
         case giftobj:
             SD_PlaySound(EINESND);
+#ifdef EMBEDDED
+            NewState (ob,s_giftchase1);
+#else			
             NewState (ob,&s_giftchase1);
+#endif
             ob->speed *= 3;                 // go faster when chasing player
             break;
 
         case fatobj:
             SD_PlaySound(ERLAUBENSND);
+#ifdef EMBEDDED
+            NewState (ob,s_fatchase1);
+#else
             NewState (ob,&s_fatchase1);
+#endif			
             ob->speed *= 3;                 // go faster when chasing player
             break;
 #endif
 
         case schabbobj:
             SD_PlaySound(SCHABBSHASND);
+#ifdef EMBEDDED
+            NewState (ob,s_schabbchase1);
+#else
             NewState (ob,&s_schabbchase1);
+#endif
             ob->speed *= 3;                 // go faster when chasing player
             break;
 
         case fakeobj:
             SD_PlaySound(TOT_HUNDSND);
+#ifdef EMBEDDED
+            NewState (ob,s_fakechase1);
+#else
             NewState (ob,&s_fakechase1);
+#endif
             ob->speed *= 3;                 // go faster when chasing player
             break;
 
         case mechahitlerobj:
             SD_PlaySound(DIESND);
+#ifdef EMBEDDED
+            NewState (ob,s_mechachase1);
+#else
             NewState (ob,&s_mechachase1);
+#endif
             ob->speed *= 3;                 // go faster when chasing player
             break;
 
         case realhitlerobj:
             SD_PlaySound(DIESND);
+#ifdef EMBEDDED
+            NewState (ob,s_hitlerchase1);
+#else
             NewState (ob,&s_hitlerchase1);
+#endif
             ob->speed *= 5;                 // go faster when chasing player
             break;
 
         case ghostobj:
+#ifdef EMBEDDED
+            NewState (ob,s_blinkychase1);
+#else
             NewState (ob,&s_blinkychase1);
+#endif
             ob->speed *= 2;                 // go faster when chasing player
             break;
 #else
         case spectreobj:
             SD_PlaySound(GHOSTSIGHTSND);
+#ifdef EMBEDDED
+            NewState (ob,s_spectrechase1);
+#else
             NewState (ob,&s_spectrechase1);
+#endif
             ob->speed = 800;                        // go faster when chasing player
             break;
 
         case angelobj:
             SD_PlaySound(ANGELSIGHTSND);
+#ifdef EMBEDDED
+            NewState (ob,s_angelchase1);
+#else
             NewState (ob,&s_angelchase1);
+#endif
             ob->speed = 1536;                       // go faster when chasing player
             break;
 
         case transobj:
             SD_PlaySound(TRANSSIGHTSND);
+#ifdef EMBEDDED
+            NewState (ob,s_transchase1);
+#else
             NewState (ob,&s_transchase1);
+#endif
             ob->speed = 1536;                       // go faster when chasing player
             break;
 
         case uberobj:
+#ifdef EMBEDDED
+            NewState (ob,s_uberchase1);
+#else
             NewState (ob,&s_uberchase1);
+#endif
             ob->speed = 3000;                       // go faster when chasing player
             break;
 
         case willobj:
             SD_PlaySound(WILHELMSIGHTSND);
+#ifdef EMBEDDED
+            NewState (ob,s_willchase1);
+#else
             NewState (ob,&s_willchase1);
+#endif
             ob->speed = 2048;                       // go faster when chasing player
             break;
 
         case deathobj:
             SD_PlaySound(KNIGHTSIGHTSND);
+#ifdef EMBEDDED
+            NewState (ob,s_deathchase1);
+#else
             NewState (ob,&s_deathchase1);
+#endif
             ob->speed = 2048;                       // go faster when chasing player
             break;
 #endif
@@ -1436,8 +1690,6 @@ void FirstSighting (objtype *ob)
 
     ob->flags |= FL_ATTACKMODE|FL_FIRSTATTACK;
 }
-
-
 
 /*
 ===============
@@ -1520,6 +1772,9 @@ boolean SightPlayer (objtype *ob)
             case deathobj:
                 ob->temp2 = 1;
                 break;
+                break;
+            default:
+                break;				
         }
         return false;
     }
@@ -1528,3 +1783,4 @@ boolean SightPlayer (objtype *ob)
 
     return true;
 }
+

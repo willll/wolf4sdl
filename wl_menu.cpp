@@ -14,7 +14,6 @@
 #endif
 
 #include "wl_def.h"
-#pragma hdrstop
 
 extern void SYS_Exit(Sint32 code);
 
@@ -100,7 +99,7 @@ CP_itemtype MainMenu[] = {
     {0, STR_QT, 0}
 #endif
 };
-
+/*
 CP_itemtype SndMenu[] = {
 #ifdef JAPAN
     {1, "", 0},
@@ -130,7 +129,8 @@ CP_itemtype SndMenu[] = {
     {1, STR_ALSB, 0}
 #endif
 };
-
+*/
+/*
 enum { CTL_MOUSEENABLE, CTL_MOUSESENS, CTL_JOYENABLE, CTL_CUSTOMIZE };
 
 CP_itemtype CtlMenu[] = {
@@ -146,7 +146,7 @@ CP_itemtype CtlMenu[] = {
     {1, STR_CUSTOM, 0}
 #endif
 };
-
+*/
 #ifndef SPEAR
 CP_itemtype NewEmenu[] = {
 #ifdef JAPAN
@@ -221,7 +221,7 @@ CP_itemtype NewMenu[] = {
     {1, STR_DEATH, 0}
 #endif
 };
-
+/*
 CP_itemtype LSMenu[] = {
     {1, "", 0},
     {1, "", 0},
@@ -234,7 +234,7 @@ CP_itemtype LSMenu[] = {
     {1, "", 0},
     {1, "", 0}
 };
-
+*/
 CP_itemtype CusMenu[] = {
     {1, "", 0},
     {0, "", 0},
@@ -249,9 +249,9 @@ CP_itemtype CusMenu[] = {
 
 // CP_iteminfo struct format: short x, y, amount, curpos, indent;
 CP_iteminfo MainItems = { MENU_X, MENU_Y, lengthof(MainMenu), STARTITEM, 24 },
-            SndItems  = { SM_X, SM_Y1, lengthof(SndMenu), 0, 52 },
-            LSItems   = { LSM_X, LSM_Y, lengthof(LSMenu), 0, 24 },
-            CtlItems  = { CTL_X, CTL_Y, lengthof(CtlMenu), -1, 56 },
+//            SndItems  = { SM_X, SM_Y1, lengthof(SndMenu), 0, 52 },
+//            LSItems   = { LSM_X, LSM_Y, lengthof(LSMenu), 0, 24 },
+//            CtlItems  = { CTL_X, CTL_Y, lengthof(CtlMenu), -1, 56 },
             CusItems  = { 8, CST_Y + 13 * 2, lengthof(CusMenu), -1, 0},
 #ifndef SPEAR
             NewEitems = { NE_X, NE_Y, lengthof(NewEmenu), 0, 88 },
@@ -274,64 +274,8 @@ int color_norml[] = {
 
 int EpisodeSelect[6] = { 1 };
 
-
-//static int SaveGamesAvail[10];
 static int StartGame;
 static int SoundStatus = 1;
-//static int pickquick;
-//static char SaveGameNames[10][32];
-//static char SaveName[13] = "savegam?.";
-
-
-////////////////////////////////////////////////////////////////////
-//
-// INPUT MANAGER SCANCODE TABLES
-//
-////////////////////////////////////////////////////////////////////
-static const char* const ScanNames[SDLK_LAST] =
-    {
-        "?","?","?","?","?","?","?","?",                                //   0
-        "BkSp","Tab","?","?","?","Return","?","?",                      //   8
-        "?","?","?","Pause","?","?","?","?",                            //  16
-        "?","?","?","Esc","?","?","?","?",                              //  24
-        "Space","!","\"","#","$","?","&","'",                           //  32
-        "(",")","*","+",",","-",".","/",                                //  40
-        "0","1","2","3","4","5","6","7",                                //  48
-        "8","9",":",";","<","=",">","?",                                //  56
-        "@","A","B","C","D","E","F","G",                                //  64
-        "H","I","J","K","L","M","N","O",                                //  72
-        "P","Q","R","S","T","U","V","W",                                //  80
-        "X","Y","Z","[","\\","]","^","_",                               //  88
-        "`","a","b","c","d","e","f","h",                                //  96
-        "h","i","j","k","l","m","n","o",                                // 104
-        "p","q","r","s","t","u","v","w",                                // 112
-        "x","y","z","{","|","}","~","?",                                // 120
-        "?","?","?","?","?","?","?","?",                                // 128
-        "?","?","?","?","?","?","?","?",                                // 136
-        "?","?","?","?","?","?","?","?",                                // 144
-        "?","?","?","?","?","?","?","?",                                // 152
-        "?","?","?","?","?","?","?","?",                                // 160
-        "?","?","?","?","?","?","?","?",                                // 168
-        "?","?","?","?","?","?","?","?",                                // 176
-        "?","?","?","?","?","?","?","?",                                // 184
-        "?","?","?","?","?","?","?","?",                                // 192
-        "?","?","?","?","?","?","?","?",                                // 200
-        "?","?","?","?","?","?","?","?",                                // 208
-        "?","?","?","?","?","?","?","?",                                // 216
-        "?","?","?","?","?","?","?","?",                                // 224
-        "?","?","?","?","?","?","?","?",                                // 232
-        "?","?","?","?","?","?","?","?",                                // 240
-        "?","?","?","?","?","?","?","?",                                // 248
-        "?","?","?","?","?","?","?","?",                                // 256
-        "?","?","?","?","?","?","?","Enter",                            // 264
-        "?","Up","Down","Right","Left","Ins","Home","End",              // 272
-        "PgUp","PgDn","F1","F2","F3","F4","F5","F6",                    // 280
-        "F7","F8","F9","F10","F11","F12","?","?",                       // 288
-        "?","?","?","?","NumLk","CapsLk","ScrlLk","RShft",              // 296
-        "Shift","RCtrl","Ctrl","RAlt","Alt","?","?","?",                // 304
-        "?","?","?","?","PrtSc","?","?","?",                            // 312
-        "?","?"                                                         // 320
-    };
 
 ////////////////////////////////////////////////////////////////////
 //
@@ -345,8 +289,8 @@ US_ControlPanel (ScanCode scancode)
 
     if (ingame)
     {
-        if (CP_CheckQuick (scancode))
-            return;
+//        if (CP_CheckQuick (scancode))
+//            return;
         StartCPMusic (MENUSONG);
     }
     else
@@ -357,9 +301,10 @@ US_ControlPanel (ScanCode scancode)
     //
     // F-KEYS FROM WITHIN GAME
     //
+/*
     switch (scancode)
     {
-/*
+
         case sc_F1:
 #ifdef SPEAR
             BossKey ();
@@ -383,15 +328,15 @@ US_ControlPanel (ScanCode scancode)
         case sc_F4:
             CP_Sound (0);
             goto finishup;
-		*/
+		
         case sc_F5:
             CP_ChangeView (0);
             goto finishup;
-		/*
+
         case sc_F6:
             CP_Control (0);
             goto finishup;
-		 */
+		 
         finishup:
             CleanupControlPanel ();
 #ifdef SPEAR
@@ -399,7 +344,7 @@ US_ControlPanel (ScanCode scancode)
 #endif
             return;
     }
-
+*/
 #ifdef SPEAR
     CacheLump (OPTIONS_LUMP_START, OPTIONS_LUMP_END);
 #endif
@@ -437,9 +382,9 @@ US_ControlPanel (ScanCode scancode)
             CA_CacheGrChunk (IDGUYS2PIC);
             VWB_DrawPic (0, 80, IDGUYS2PIC);
             UNCACHEGRCHUNK (IDGUYS2PIC);
-
+#ifndef USE_SPRITES
             VW_UpdateScreen ();
-
+#endif
             SDL_Color pal[256];
             CA_CacheGrChunk (IDGUYSPALETTE);
             VL_ConvertPalette(grsegs[IDGUYSPALETTE], pal, 256);
@@ -523,7 +468,13 @@ US_ControlPanel (ScanCode scancode)
 	//slPrint("exit game 8!!!!",slLocate(10,11));	
 	
     // RETURN/START GAME EXECUTION
-	slScrTransparent(NBG1OFF);
+//slPrint("slScrTransparent6",slLocate(1,17));		
+	slScrTransparent(0);
+// vbt : nettoyage ecran en sortie de menu	
+	curSurface = screen;
+	VL_BarScaledCoord (viewscreenx,viewscreeny,viewwidth,viewheight,0);
+	curSurface = screenBuffer;
+	VL_BarScaledCoord (viewscreenx,viewscreeny,viewwidth,viewheight,0); // vbt nettoie l'écran, à mettre en sortant du resize	
 #ifdef SPEAR
     UnCacheLump (OPTIONS_LUMP_START, OPTIONS_LUMP_END);
 #endif
@@ -544,8 +495,9 @@ void EnableEndGameMenuItem()
 void
 DrawMainMenu (void)
 {
-	 slScrTransparent(NBG1ON);
-	slPrint("DrawMainMenu",slLocate(10,15));
+//slPrint("slScrTransparent7",slLocate(1,17));		
+	slScrTransparent(NBG1ON);
+//	slPrint("DrawMainMenu",slLocate(10,15));
 #ifdef JAPAN
     CA_CacheScreen (S_OPTIONSPIC);
 #else
@@ -605,7 +557,9 @@ DrawMainMenu (void)
     }
 
     DrawMenu (&MainItems, &MainMenu[0]);
+#ifndef USE_SPRITES	
     VW_UpdateScreen ();
+#endif	
 }
 
 #ifndef GOODTIMES
@@ -691,7 +645,7 @@ BossKey (void)
 #endif
 #endif
 
-
+#if 0
 ////////////////////////////////////////////////////////////////////
 //
 // CHECK QUICK-KEYS & QUIT (WHILE IN A GAME)
@@ -731,7 +685,7 @@ CP_CheckQuick (ScanCode scancode)
             CA_CacheGrChunk (STARTFONT + 1);
 
             WindowX = WindowY = 0;
-            WindowW = 320;
+            WindowW = SATURN_WIDTH;
             WindowH = 160;
 #ifdef JAPAN
             if (GetYorN (7, 8, C_QUITMSGPIC))
@@ -743,7 +697,9 @@ CP_CheckQuick (ScanCode scancode)
 #endif
 #endif
             {
+#ifndef USE_SPRITES				
                 VW_UpdateScreen ();
+#endif				
                 SD_MusicOff ();
                 SD_StopSound ();
                 MenuFadeOut ();
@@ -759,7 +715,7 @@ CP_CheckQuick (ScanCode scancode)
 
     return 0;
 }
-
+#endif
 
 ////////////////////////////////////////////////////////////////////
 //
@@ -816,7 +772,9 @@ CP_ViewScores (int)
 #endif
 
     DrawHighScores ();
+#ifndef USE_SPRITES	
     VW_UpdateScreen ();
+#endif	
     MenuFadeIn ();
     fontnumber = 1;
 
@@ -999,8 +957,9 @@ DrawNewEpisode (void)
 
     for (i = 0; i < 6; i++)
         VWB_DrawPic (NE_X + 32, NE_Y + i * 26, C_EPISODE1PIC + i);
-
+#ifndef USE_SPRITES
     VW_UpdateScreen ();
+#endif	
     MenuFadeIn ();
     WaitKeyUp ();
 }
@@ -1038,7 +997,9 @@ DrawNewGame (void)
 
     DrawMenu (&NewItems, &NewMenu[0]);
     DrawNewGameDiff (NewItems.curpos);
+#ifndef USE_SPRITES	
     VW_UpdateScreen ();
+#endif	
     MenuFadeIn ();
     WaitKeyUp ();
 }
@@ -1066,7 +1027,7 @@ CP_ChangeView (int)
     ControlInfo ci;
 
     WindowX = WindowY = 0;
-    WindowW = 320;
+    WindowW = SATURN_WIDTH;
     WindowH = 200;
     newview = oldview = viewsize;
     DrawChangeView (oldview);
@@ -1086,7 +1047,9 @@ CP_ChangeView (int)
                     newview = 4;
                 if(newview >= 19) DrawChangeView(newview);
                 else ShowViewSize (newview);
+#ifndef USE_SPRITES				
                 VW_UpdateScreen ();
+#endif				
                 SD_PlaySound (HITWALLSND);
                 TicDelay (10);
                 break;
@@ -1100,7 +1063,9 @@ CP_ChangeView (int)
                     DrawChangeView(newview);
                 }
                 else ShowViewSize (newview);
+#ifndef USE_SPRITES				
                 VW_UpdateScreen ();
+#endif				
                 SD_PlaySound (HITWALLSND);
                 TicDelay (10);
                 break;
@@ -1143,9 +1108,10 @@ CP_ChangeView (int)
 void
 DrawChangeView (int view)
 {
-	slScrTransparent(NBG1OFF);
+//slPrint("slScrTransparent8",slLocate(1,17));		
+	slScrTransparent(0);
     int rescaledHeight = screenHeight / scaleFactor;
-    if(view != 21) VWB_Bar (0, rescaledHeight - 40, 320, 40, bordercol);
+    if(view != 21) VWB_Bar (0, rescaledHeight - 40, SATURN_WIDTH, 40, bordercol);
 
 #ifdef JAPAN
     CA_CacheScreen (S_CHANGEPIC);
@@ -1156,14 +1122,16 @@ DrawChangeView (int view)
 
     PrintY = (screenHeight / scaleFactor) - 39;
     WindowX = 0;
-    WindowY = 320;                                  // TODO: Check this!
+    WindowY = SATURN_WIDTH;                                  // TODO: Check this!
     SETFONTCOLOR (HIGHLIGHT, BKGDCOLOR);
 
     US_CPrint (STR_SIZE1 "\n");
     US_CPrint (STR_SIZE2 "\n");
     US_CPrint (STR_SIZE3);
 #endif
+#ifndef USE_SPRITES
     VW_UpdateScreen ();
+#endif	
 }
 
 
@@ -1188,7 +1156,9 @@ CP_Quit (int)
 
 #endif
     {
+#ifndef USE_SPRITES		
         VW_UpdateScreen ();
+#endif		
         SD_MusicOff ();
         SD_StopSound ();
         MenuFadeOut ();
@@ -1216,7 +1186,7 @@ void
 ClearMScreen (void)
 {
 #ifndef SPEAR
-    VWB_Bar (0, 0, 320, 200, BORDCOLOR);
+    VWB_Bar (0, 0, SATURN_WIDTH, 200, BORDCOLOR);
 #else
     VWB_DrawPic (0, 0, C_BACKDROPPIC);
 #endif
@@ -1319,11 +1289,12 @@ CleanupControlPanel (void)
 
     fontnumber = 0;
 // vbt 13/08/2020 : ajout	
-		byte *vbuf = (byte *)curSurface->pixels;
-		byte *ptr = vbuf;
+//		byte *vbuf = (byte *)curSurface->pixels;
+//		byte *ptr = vbuf;
 
-		for(int y = 0; y < screenHeight; y++, ptr += curPitch)
-			memset(ptr, 0x00, screenWidth);	
+	//	for(int y = 0; y < screenHeight; y++, ptr += curPitch)
+	//		memset(ptr, 0x00, screenWidth);	
+	memset((byte *)curSurface->pixels, 0x00, screenWidth*screenHeight);	
 }
 
 
@@ -1360,8 +1331,9 @@ HandleMenu (CP_iteminfo * item_i, CP_itemtype * items, void (*routine) (int w))
     //
     if (routine)
         routine (which);
+#ifndef USE_SPRITES	
     VW_UpdateScreen ();
-
+#endif
     shape = C_CURSOR1PIC;
     timer = 8;
     exit = 0;
@@ -1390,7 +1362,9 @@ HandleMenu (CP_iteminfo * item_i, CP_itemtype * items, void (*routine) (int w))
             VWB_DrawPic (x, y, shape);
             if (routine)
                 routine (which);
+#ifndef USE_SPRITES			
             VW_UpdateScreen ();
+#endif			
         }
         else SDL_Delay(5);
 
@@ -1399,6 +1373,7 @@ HandleMenu (CP_iteminfo * item_i, CP_itemtype * items, void (*routine) (int w))
         //
         // SEE IF ANY KEYS ARE PRESSED FOR INITIAL CHAR FINDING
         //
+/*
         key = LastASCII;
         if (key)
         {
@@ -1434,7 +1409,7 @@ HandleMenu (CP_iteminfo * item_i, CP_itemtype * items, void (*routine) (int w))
                     }
             }
         }
-
+*/
         //
         // GET INPUT
         //
@@ -1539,8 +1514,9 @@ HandleMenu (CP_iteminfo * item_i, CP_itemtype * items, void (*routine) (int w))
 
     if (routine)
         routine (which);
+#ifndef USE_SPRITES	
     VW_UpdateScreen ();
-
+#endif
     item_i->curpos = which;
 
     lastitem = which;
@@ -1579,7 +1555,9 @@ EraseGun (CP_iteminfo * item_i, CP_itemtype * items, int x, int y, int which)
     PrintX = item_i->x + item_i->indent;
     PrintY = item_i->y + which * 13;
     US_Print ((items + which)->string);
+#ifndef USE_SPRITES	
     VW_UpdateScreen ();
+#endif	
 }
 
 
@@ -1590,7 +1568,9 @@ void
 DrawHalfStep (int x, int y)
 {
     VWB_DrawPic (x, y, C_CURSOR1PIC);
+#ifndef USE_SPRITES	
     VW_UpdateScreen ();
+#endif	
     SD_PlaySound (MOVEGUN1SND);
     SDL_Delay (8 * 100 / 7);
 }
@@ -1617,7 +1597,9 @@ DrawGun (CP_iteminfo * item_i, CP_itemtype * items, int x, int *y, int which, in
     //
     if (routine)
         routine (which);
+#ifndef USE_SPRITES	
     VW_UpdateScreen ();
+#endif	
     SD_PlaySound (MOVEGUN2SND);
 }
 
@@ -1650,17 +1632,15 @@ void
 DrawMenu (CP_iteminfo * item_i, CP_itemtype * items)
 {
     int i, which = item_i->curpos;
-	//slPrint("DrawMenu",slLocate(10,16));
 
     WindowX = PrintX = item_i->x + item_i->indent;
     WindowY = PrintY = item_i->y;
-    WindowW = 320;
+    WindowW = SATURN_WIDTH;
     WindowH = 200;
 
     for (i = 0; i < item_i->amount; i++)
     {
         SetTextColor (items + i, which == i);
-		//slPrint((items + i)->string,slLocate(20,i+15));
         PrintY = item_i->y + i * 13;
         if ((items + i)->active)
             US_Print ((items + i)->string);
@@ -1764,7 +1744,9 @@ Confirm (const char *string)
                     PrintY = y;
                     US_Print ("_");
             }
+#ifndef USE_SPRITES			
             VW_UpdateScreen ();
+#endif			
             tick ^= 1;
             lastBlinkTime = GetTimeCount();
         }
@@ -1815,7 +1797,9 @@ GetYorN (int x, int y, int pic)
     CA_CacheGrChunk (pic);
     VWB_DrawPic (x * 8, y * 8, pic);
     UNCACHEGRCHUNK (pic);
+#ifndef USE_SPRITES	
     VW_UpdateScreen ();
+#endif	
     IN_ClearKeysDown ();
 
     do
@@ -1901,7 +1885,9 @@ Message (const char *string)
     SETFONTCOLOR (0, TEXTCOLOR);
 
     US_Print (string);
+#ifndef USE_SPRITES	
     VW_UpdateScreen ();
+#endif	
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1929,13 +1915,13 @@ StartCPMusic (int song)
 
     return lastoffs;
 }
-
+/*
 void
 FreeMusic (void)
 {
     //UNCACHEAUDIOCHUNK (STARTMUSIC + lastmusic);
 }
-
+*/
 ///////////////////////////////////////////////////////////////////////////
 //
 // CHECK FOR PAUSE KEY (FOR MUSIC ONLY)
@@ -1990,11 +1976,11 @@ void
 DrawStripes (int y)
 {
 #ifndef SPEAR
-    VWB_Bar (0, y, 320, 24, 0);
-    VWB_Hlin (0, 319, y + 22, STRIPE);
+    VWB_Bar (0, y, SATURN_WIDTH, 24, 0);
+    VWB_Hlin (0, SATURN_WIDTH-1, y + 22, STRIPE);
 #else
-    VWB_Bar (0, y, 320, 22, 0);
-    VWB_Hlin (0, 319, y + 23, 0);
+    VWB_Bar (0, y, SATURN_WIDTH, 22, 0);
+    VWB_Hlin (0, SATURN_WIDTH-1, y + 23, 0);
 #endif
 }
 
@@ -2020,7 +2006,7 @@ ShootSnd (void)
 int stat(const char *_path, struct stat *_sbuf)
 {
 	char path[15];
-	unsigned int i;
+	unsigned int i=0;
 	strcpy(path,_path);
 	while (path[i])
 	{
@@ -2065,7 +2051,7 @@ CheckForEpisodes (void)
 #ifdef UPLOAD
     if(!stat("vswap.wl1", &statbuf))
     {
-        strcpy (extension, "wl1");
+        strcpy (extension, "WL1");
         numEpisodesMissing = 5;
     }
     else
@@ -2093,9 +2079,9 @@ CheckForEpisodes (void)
         }
         else
         {
-            if(!stat("vswap.wl1", &statbuf))
+            if(!stat("VSWAP.WL1", &statbuf))
             {
-                strcpy (extension, "wl1");
+                strcpy (extension, "WL1");
                 numEpisodesMissing = 5;
             }
             else
@@ -2144,7 +2130,7 @@ CheckForEpisodes (void)
 //    strcpy (audioext, "sdm");
 #endif
 #else
-    strcpy (graphext, extension);
+//    strcpy (graphext, extension);
 //    strcpy (audioext, extension);
 #endif
 

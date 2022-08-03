@@ -25,7 +25,6 @@
 
 
 OBJS = $(filter %.o, $(SRCS:.s=.o) $(SRCS:.c=.o) $(SRCS:.cpp=.o))
-#LIBS = C:/SaturnOrbit/SGL_302j/LIB_ELF/libsgl.a \
 LIBS = C:/SaturnOrbit/SGL_302j/LIB_ELF/libsgl_real_elf.a \
 C:/vbt/saturn/SBL6/SEGALIB/GFS/elf/gfs2.o \
 C:/vbt/saturn/SBL6/SEGALIB/GFS/elf/gfs_cdb2.o \

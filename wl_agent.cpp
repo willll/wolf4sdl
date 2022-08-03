@@ -1,62 +1,47 @@
 // WL_AGENT.C
 
 #include "wl_def.h"
-#pragma hdrstop
 
+int facetimes = 0;
 /*
 =============================================================================
 
-                                LOCAL CONSTANTS
+						 LOCAL CONSTANTS
 
 =============================================================================
 */
 
-#define MAXMOUSETURN    10
+#define MOVESCALE		150
+#define BACKMOVESCALE	100
+#define ANGLESCALE		20
 
-
-#define MOVESCALE       150l
-#define BACKMOVESCALE   100l
-#define ANGLESCALE      20
 
 /*
 =============================================================================
 
-                                GLOBAL VARIABLES
+						 GLOBAL VARIABLES
 
 =============================================================================
 */
-
-
 
 //
 // player state info
 //
-int32_t         thrustspeed;
-
-word            plux,pluy;          // player coordinates scaled to unsigned
-
-short           anglefrac;
-
+long		thrustspeed;
 objtype        *LastAttacker;
-
-/*
-=============================================================================
-
-                                                 LOCAL VARIABLES
-
-=============================================================================
-*/
-
-
+word            plux,pluy;          // player coordinates scaled to unsigned
+short           anglefrac;
+#ifndef EMBEDDED
 void    T_Player (objtype *ob);
 void    T_Attack (objtype *ob);
 
 statetype   s_player = {false,0,0,(statefunc) T_Player,NULL,NULL};
 statetype   s_attack = {false,0,0,(statefunc) T_Attack,NULL,NULL};
+#endif
 
 struct atkinf
 {
-    int8_t    tics,attack,frame;              // attack is 1 for gun, 2 for knife
+    signed char tics:4, attack:4, frame:4;              // attack is 1 for gun, 2 for knife
 } attackinfo[4][14] =
 {
     { {6,0,1},{6,2,2},{6,0,3},{6,-1,4} },
@@ -270,17 +255,34 @@ void ControlMovement (objtype *ob)
 =
 ==================
 */
+void LatchDrawPicScaledCoordIndirect (unsigned scx, unsigned scy, unsigned picnum);
 
 void StatusDrawPic (unsigned x, unsigned y, unsigned picnum)
 {
-    LatchDrawPicScaledCoord ((screenWidth-scaleFactor*320)/16 + scaleFactor*x,
+#if SATURN_WIDTH == 352
+    LatchDrawPicScaledCoord (2+(screenWidth-scaleFactor*SATURN_WIDTH)/16 + scaleFactor*x,
         screenHeight-scaleFactor*(STATUSLINES-y),picnum);
+#else
+    LatchDrawPicScaledCoord ((screenWidth-scaleFactor*SATURN_WIDTH)/16 + scaleFactor*x,
+        screenHeight-scaleFactor*(STATUSLINES-y),picnum);
+#endif
+}
+
+inline void StatusDrawPicIndirect (unsigned x, unsigned y, unsigned picnum)
+{
+#if SATURN_WIDTH == 352	
+    LatchDrawPicScaledCoordIndirect (2+(screenWidth-scaleFactor*SATURN_WIDTH)/16 + scaleFactor*x,
+        screenHeight-scaleFactor*(STATUSLINES-y),picnum);    
+#else	
+	LatchDrawPicScaledCoordIndirect ((screenWidth-scaleFactor*SATURN_WIDTH)/16 + scaleFactor*x,
+        screenHeight-scaleFactor*(STATUSLINES-y),picnum);
+#endif		
 }
 
 void StatusDrawFace(unsigned picnum)
 {
     StatusDrawPic(17, 4, picnum);
-    StatusDrawLCD(picnum);
+//    StatusDrawLCD(picnum);
 }
 
 
@@ -330,7 +332,6 @@ void DrawFace (void)
 */
 
 int facecount = 0;
-int facetimes = 0;
 
 void UpdateFace (void)
 {
@@ -375,7 +376,7 @@ static void LatchNumber (int x, int y, unsigned width, int32_t number)
     unsigned length,c;
     char    str[20];
 
-    ltoa (number,str,10);
+    ltoa (number,str);
 
     length = (unsigned) strlen (str);
 
@@ -579,7 +580,8 @@ void GivePoints (int32_t points)
 void DrawWeapon (void)
 {
     if(viewsize == 21 && ingame) return;
-    StatusDrawPic (32,8,KNIFEPIC+gamestate.weapon);
+	if(gamestate.weapon==-1) return; // vbt ajout
+	StatusDrawPicIndirect (32,8,KNIFEPIC+gamestate.weapon);
 }
 
 
@@ -851,11 +853,22 @@ boolean TryMove (objtype *ob)
     //
     // check for solid walls
     //
+	
+#ifdef EMBEDDED
+	for (y=yl;y<=yh;y++)
+		for (x=xl;x<=xh;x++)
+		{
+//			if (actorat[x][y] && !(actorat[x][y] & 0x8000))
+			if (solid_actor_at(x, y))
+				return false;
+		}
+#else
     for (y=yl;y<=yh;y++)
     {
         for (x=xl;x<=xh;x++)
         {
             check = actorat[x][y];
+			
             if (check && !ISPOINTER(check))
             {
                 if(tilemap[x][y]==64 && x==pwallx && y==pwally)   // back of moving pushwall?
@@ -884,6 +897,7 @@ boolean TryMove (objtype *ob)
             }
         }
     }
+#endif
 
     //
     // check for actors
@@ -901,8 +915,15 @@ boolean TryMove (objtype *ob)
     {
         for (x=xl;x<=xh;x++)
         {
+#ifdef EMBEDDED
+//			check = &objlist[actorat[x][y]];
+			check = &objlist[get_actor_at(x, y)];
+			
+			if (check->flags & FL_SHOOTABLE)			
+#else
             check = actorat[x][y];
             if (ISPOINTER(check) && check != player && (check->flags & FL_SHOOTABLE) )
+#endif				
             {
                 deltax = ob->x - check->x;
                 if (deltax < -MINACTORDIST || deltax > MINACTORDIST)
@@ -918,7 +939,6 @@ boolean TryMove (objtype *ob)
 
     return true;
 }
-
 
 /*
 ===================
@@ -991,25 +1011,6 @@ void VictoryTile (void)
 ===================
 */
 
-// For player movement in demos exactly as in the original Wolf3D v1.4 source code
-static fixed FixedByFracOrig(fixed a, fixed b)
-{
-    int sign = 0;
-    if(b == 65536) b = 65535;
-    else if(b == -65536) b = 65535, sign = 1;
-    else if(b < 0) b = (-b), sign = 1;
-
-    if(a < 0)
-    {
-        a = -a;
-        sign = !sign;
-    }
-    fixed res = (fixed)(((int64_t) a * b) >> 16);
-    if(sign)
-        res = -res;
-    return res;
-}
-
 void Thrust (int angle, int32_t speed)
 {
     int32_t xmove,ymove;
@@ -1031,20 +1032,9 @@ void Thrust (int angle, int32_t speed)
     if (speed >= MINDIST*2)
         speed = MINDIST*2-1;
 // vbt
-    xmove = DEMOCHOOSE_ORIG_SDL(
-                FixedByFracOrig(speed, costable[angle]),
-                FixedMul(speed,costable[angle]));
-    ymove = DEMOCHOOSE_ORIG_SDL(
-                -FixedByFracOrig(speed, sintable[angle]),
-                -FixedMul(speed,sintable[angle]));
+	xmove = FixedMul(speed,costable[angle]);
+	ymove = -FixedMul(speed,sintable[angle]);
 
-/*    xmove = DEMOCHOOSE_ORIG_SDL(
-                FixedMul(speed, costable[angle]),
-                FixedMul(speed,costable[angle]));
-    ymove = DEMOCHOOSE_ORIG_SDL(
-                -FixedMul(speed, sintable[angle]),
-                -FixedMul(speed,sintable[angle]));
-*/
     ClipMove(player,xmove,ymove);
 
     player->tilex = (short)(player->x >> TILESHIFT);                // scale to tile values
@@ -1056,7 +1046,6 @@ void Thrust (int angle, int32_t speed)
     if (*(mapsegs[1] + offset) == EXITTILE)
         VictoryTile ();
 }
-
 
 /*
 =============================================================================
@@ -1080,9 +1069,11 @@ void Cmd_Fire (void)
     buttonheld[bt_attack] = true;
 
     gamestate.weaponframe = 0;
-
+#ifdef EMBEDDED
+    player->state = s_attack;
+#else
     player->state = &s_attack;
-
+#endif
     gamestate.attackframe = 0;
     gamestate.attackcount =
         attackinfo[gamestate.weapon][gamestate.attackframe].tics;
@@ -1138,7 +1129,11 @@ void Cmd_Use (void)
     }
 
     doornum = tilemap[checkx][checky];
-    if (*(mapsegs[1]+(checky<<mapshift)+checkx) == PUSHABLETILE)
+#ifdef EMBEDDED
+	if (*(mapsegs[1]+farmapylookup[checky]+checkx) == PUSHABLETILE)
+#else
+	if (*(mapsegs[1]+(checky<<mapshift)+checkx) == PUSHABLETILE)
+#endif	
     {
         //
         // pushable wall
@@ -1155,7 +1150,11 @@ void Cmd_Use (void)
         buttonheld[bt_use] = true;
 
         tilemap[checkx][checky]++;              // flip switch
+#ifdef EMBEDDED
+		if (*(mapsegs[0]+farmapylookup[player->tiley]+player->tilex) == ALTELEVATORTILE)
+#else
         if (*(mapsegs[0]+(player->tiley<<mapshift)+player->tilex) == ALTELEVATORTILE)
+#endif
             playstate = ex_secretlevel;
         else
             playstate = ex_completed;
@@ -1180,7 +1179,6 @@ void Cmd_Use (void)
 */
 
 
-
 /*
 ===============
 =
@@ -1195,10 +1193,15 @@ void SpawnPlayer (int tilex, int tiley, int dir)
     player->active = ac_yes;
     player->tilex = tilex;
     player->tiley = tiley;
+#ifdef EMBEDDED
+	player->areanumber = *(mapsegs[0] + farmapylookup[player->tiley]+player->tilex);
+	player->state = s_player;
+#else
     player->areanumber = (byte) *(mapsegs[0]+(player->tiley<<mapshift)+player->tilex);
+    player->state = &s_player;
+#endif	
     player->x = ((int32_t)tilex<<TILESHIFT)+TILEGLOBAL/2;
     player->y = ((int32_t)tiley<<TILESHIFT)+TILEGLOBAL/2;
-    player->state = &s_player;
     player->angle = (1-dir)*90;
     if (player->angle<0)
         player->angle += ANGLES;
@@ -1252,8 +1255,6 @@ void    KnifeAttack (objtype *ob)
     // hit something
     DamageActor (closest,US_RndT() >> 4);
 }
-
-
 
 void    GunAttack (objtype *ob)
 {
@@ -1366,7 +1367,6 @@ void VictorySpin (void)
     }
 }
 
-
 //===========================================================================
 
 /*
@@ -1414,7 +1414,11 @@ void    T_Attack (objtype *ob)
         switch (cur->attack)
         {
             case -1:
+#ifdef EMBEDDED
+                ob->state = s_player;
+#else
                 ob->state = &s_player;
+#endif				
                 if (!gamestate.ammo)
                 {
                     gamestate.weapon = wp_knife;
@@ -1443,7 +1447,7 @@ void    T_Attack (objtype *ob)
                     break;
                 }
                 GunAttack (ob);
-                if (!ammocheat)
+//                if (!ammocheat)
                     gamestate.ammo--;
                 DrawAmmo ();
                 break;
@@ -1464,7 +1468,6 @@ void    T_Attack (objtype *ob)
             attackinfo[gamestate.weapon][gamestate.attackframe].frame;
     }
 }
-
 
 
 //===========================================================================
@@ -1503,3 +1506,4 @@ void    T_Player (objtype *ob)
     player->tilex = (short)(player->x >> TILESHIFT);                // scale to tile values
     player->tiley = (short)(player->y >> TILESHIFT);
 }
+

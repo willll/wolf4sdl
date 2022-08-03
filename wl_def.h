@@ -2,17 +2,22 @@
 #define WL_DEF_H
 
 #define USE_SPRITES 1
+#define PONY 1 
+#define USE_ADX 1
 #define USE_SLAVE 1
-#define SATURN_WIDTH 320
+#define EMBEDDED 1
+#define SATURN_WIDTH 352
 #define SATURN_SORT_VALUE 240
+#define SATURN_MAPSEG_ADDR 0x2002EA000
+#define SATURN_CHUNK_ADDR 0x002F0000
 // 240 pour du 320, 264 pour du 352
 #define		LINE_COLOR_TABLE		(VDP2_VRAM_A0	+ 0x1f400)
 
 extern "C" {
 #include <malloc.h>
-#include "C:\vbt\saturn\vbtsh4\toolchain\sh-elf\include\string.h"
-#include "C:\vbt\saturn\vbtsh4\toolchain\sh-elf\include\stdlib.h"
-}
+//#include "C:\vbt\saturn\vbtsh4\toolchain\sh-elf\include\string.h"
+//#include "C:\vbt\saturn\vbtsh4\toolchain\sh-elf\include\stdlib.h"
+
 // Defines which version shall be built and configures supported extra features
 #include "version.h"
 
@@ -29,6 +34,7 @@ extern "C" {
 #	include <string.h>
 #	include <stdarg.h>
 #endif
+}
 #include "sdl/SDL.h"
 
 #if !defined O_BINARY
@@ -122,8 +128,8 @@ void Quit(const char *errorStr, ...);
 =============================================================================
 */
 
-#define MAXTICS 10
-#define DEMOTICS        4
+#define MAXTICS 8
+#define DEMOTICS        8
 
 #define MAXACTORS       150         // max number of nazis, etc / map
 #define MAXSTATS        400         // max number of lamps, bonus, etc
@@ -157,7 +163,8 @@ void Quit(const char *errorStr, ...);
 
 #define SCREENBWIDE     80
 
-#define HEIGHTRATIO     0.50            // also defined in id_mm.c
+//#define HEIGHTRATIO     0.50            // also defined in id_mm.c
+#define width_to_height(x) (x >> 1)
 
 #define BORDERCOLOR     3
 #define FLASHCOLOR      5
@@ -245,6 +252,54 @@ void Quit(const char *errorStr, ...);
 
 #define STARTAMMO       8
 
+typedef uint64_t mapbitmap[MAPSIZE];
+static inline boolean getmapbit(mapbitmap m, int x, int y)
+{
+  return (m[x] & (1ull << y)) != 0;
+}
+static inline void setmapbit(mapbitmap m, int x, int y)
+{
+  m[x] |= (1ull << y);
+}
+
+extern mapbitmap objactor;
+
+static inline void clearmapbit(mapbitmap m, int x, int y)
+{
+  m[x] &= ~(1ull << y);
+}
+#define obj_id(ob) ((ob) - objlist)
+#define getactorflag(x, y) getmapbit(objactor, x, y)
+#define setactorflag(x, y) setmapbit(objactor, x, y)
+#define clearactorflag(x, y) clearmapbit(objactor, x, y)
+
+/* Record actor location.  */
+#define move_actor(o) do { \
+    setactorflag((o)->tilex, (o)->tiley); \
+    actorat[(o)->tilex][(o)->tiley] = obj_id(o); \
+    } while (0)
+
+/* Record Door location.  */
+#define set_door_actor(x, y, doornum) actorat[x][y] = doornum | 0x80
+/* Record wall location.  */
+#define set_wall_at(x, y, tile) actorat[x][y] = tile
+/* Clear location.  */
+#define clear_actor(x, y) do { \
+    actorat[x][y] = 0; \
+    clearactorflag(x, y); \
+    } while (0)
+/* nonzero if something other than a door is at given location.  */
+#define obj_actor_at(x, y) getactorflag(x, y)
+/* nonzero if a wall is at given location.  */
+#define wall_actor_at(x, y) (actorat[x][y] && actorat[x][y] < 128 \
+			    && !getactorflag(x, y))
+/* nonzero if a door or wall is at given location.  */
+#define solid_actor_at(x, y) (actorat[x][y] && !getactorflag(x, y))
+/* zero if given location is empty.  */
+#define any_actor_at(x, y) (actorat[x][y] != 0 || getactorflag(x, y))
+/* The id of the actor at given location.  */
+#define get_actor_at(x, y) \
+  (obj_actor_at(x, y) ? actorat[x][y] & 0xff : actorat[x][y] & 0x7f)
 
 // object flag values
 
@@ -605,11 +660,11 @@ enum
     SPR_MACHINEGUNATK4,
 
     SPR_CHAINREADY,SPR_CHAINATK1,SPR_CHAINATK2,SPR_CHAINATK3,
-    SPR_CHAINATK4, SPR_NULLSPRITE, SPR_TOTAL
+    SPR_CHAINATK4, SPR_NULLSPRITE
 // vbt ajout, vient de wolf32x
 };
 // vbt ajout, vient de wolf32x
-//static byte *spritegfx[SPR_TOTAL];
+//static byte *spritegfx[SPR_NULLSPRITE];
 /*
 =============================================================================
 
@@ -637,8 +692,8 @@ typedef enum {
 typedef enum {
     ac_badobject = -1,
     ac_no,
-    ac_yes,
-    ac_allways
+    ac_yes //,
+ //   ac_allways
 } activetype;
 
 typedef enum {
@@ -739,6 +794,16 @@ typedef enum {
 
 typedef void (* statefunc) (void *);
 
+#ifdef EMBEDDED
+typedef struct statestruct
+{
+	boolean	rotate:2;
+	int shapenum:10; /* a shapenum of -1 means get from ob->temp1 */
+	int tictime:10;
+	void (*think)(), (*action)();
+	int next:10; /* stateenum */
+} statetype;
+#else
 typedef struct statestruct
 {
     boolean rotate;
@@ -747,7 +812,7 @@ typedef struct statestruct
     void    (*think) (void *),(*action) (void *);
     struct  statestruct *next;
 } statetype;
-
+#endif
 
 //---------------------
 //
@@ -794,15 +859,19 @@ typedef struct doorstruct
 
 typedef struct objstruct
 {
-    activetype  active;
+    activetype  active:2;
     short       ticcount;
-    classtype   obclass;
+    classtype   obclass:5;
+#ifndef EMBEDDED	
     statetype   *state;
-
+#else
+	int		id;
+	int		state; /* stateenum */
+#endif	
     uint32_t    flags;              // FL_SHOOTABLE, etc
 
     int32_t     distance;           // if negative, wait for that door to open
-    dirtype     dir;
+    dirtype     dir:4;
 
     fixed       x,y;
     word        tilex,tiley;
@@ -816,7 +885,8 @@ typedef struct objstruct
     short       hitpoints;
     int32_t     speed;
 
-    short       temp1,temp2,hidden;
+    short       temp1,temp2;
+	short     hidden;
     struct objstruct *next,*prev;
 } objtype;
 
@@ -834,7 +904,7 @@ enum
     bt_nextweapon,
     bt_prevweapon,
     bt_esc,
-    bt_pause,
+//    bt_pause,
     bt_strafeleft,
     bt_straferight,
     bt_moveforward,
@@ -926,11 +996,8 @@ extern  short    centerx;
 extern  int32_t  heightnumerator;
 extern  fixed    scale;
 
-extern  int      dirangle[9];
-
-//extern  int      mouseadjustment;
 extern  int      shootdelta;
-extern  unsigned screenofs;
+//extern  unsigned screenofs;
 
 extern  boolean  startgame;
 //extern  char     str[80];
@@ -939,6 +1006,7 @@ extern  boolean  startgame;
 //
 // Command line parameter variables
 //
+/*
 extern  boolean  param_debugmode;
 extern  boolean  param_nowait;
 extern  int      param_difficulty;
@@ -950,8 +1018,7 @@ extern  int      param_audiobuffer;
 extern  int      param_mission;
 extern  boolean  param_goodtimes;
 extern  boolean  param_ignorenumchunks;
-
-
+*/
 void            NewGame (int difficulty,int episode);
 inline void     CalcProjection (int32_t focal);
 void            NewViewSize (int width);
@@ -973,15 +1040,16 @@ void            ShutdownId (void);
 extern  gametype        gamestate;
 extern  byte            bordercol;
 extern  SDL_Surface     *latchpics[NUMLATCHPICS];
-extern  char            demoname[13];
+//extern  char            demoname[13];
 
 void    SetupGameLevel (void);
 void    GameLoop (void);
 void    DrawPlayBorder (void);
 void    DrawStatusBorder (byte color);
 void    DrawPlayScreen (void);
+void	DrawStatusBar (void);
 void    DrawPlayBorderSides (void);
-void    ShowActStatus();
+//void    ShowActStatus();
 
 void    PlayDemo (int demonumber);
 void    RecordDemo (void);
@@ -1017,8 +1085,18 @@ void UpdateSoundLoc(void);
 
 extern  byte            tilemap[MAPSIZE][MAPSIZE];      // wall values only
 extern  byte            spotvis[MAPSIZE][MAPSIZE];
-extern  objtype         *actorat[MAPSIZE][MAPSIZE];
+#ifdef EMBEDDED
 
+#include "wl_act3.h"
+extern  int         actorat[MAPSIZE][MAPSIZE];
+extern	unsigned	farmapylookup[MAPSIZE];
+extern statetype gamestates[MAXSTATES];
+
+//extern	objtype 	objlist[MAXACTORS],*new,*obj,*player,*lastobj,
+extern	objtype 	*neww;
+#else
+extern  objtype         *actorat[MAPSIZE][MAPSIZE];
+#endif
 extern  objtype         *player;
 
 extern  unsigned        tics;
@@ -1044,16 +1122,16 @@ extern  int         godmode;
 
 extern  boolean     demoplayback;
 extern  int8_t      *demoptr, *lastdemoptr;
-extern  memptr      demobuffer;
+//extern  memptr      demobuffer;
 
 //
 // control info
 //
-extern  boolean     mouseenabled,joystickenabled;
+//extern  boolean     mouseenabled,joystickenabled;
 extern  int         dirscan[4];
 extern  int         buttonscan[NUMBUTTONS];
-extern  int         buttonmouse[4];
-extern  int         buttonjoy[32];
+//extern  int         buttonmouse[4];
+//extern  int         buttonjoy[32];
 
 void    InitActorList (void);
 void    GetNewActor (void);
@@ -1079,7 +1157,7 @@ extern  int32_t     funnyticount;           // FOR FUNNY BJ FACE
 extern  objtype     *objfreelist;     // *obj,*player,*lastobj,
 
 extern  boolean     /*noclip,*/ammocheat;
-extern  int         singlestep, extravbls;
+//extern  int         singlestep, extravbls;
 
 /*
 =============================================================================
@@ -1125,14 +1203,12 @@ extern  short *pixelangle;
 extern  int32_t finetangent[FINEANGLES/4];
 extern  fixed sintable[];
 extern  fixed *costable;
-extern  int *wallheight;
+//extern  short *wallheight;
 extern  word horizwall[],vertwall[];
 extern  int32_t    lasttimecount;
 extern  int32_t    frameon;
 
-extern  unsigned screenloc[3];
-
-extern  boolean fizzlein, fpscounter;
+extern  boolean fizzlein;//, fpscounter;
 
 extern  fixed   viewx,viewy;                    // the focal point
 extern  fixed   viewsin,viewcos;
@@ -1160,9 +1236,13 @@ typedef struct
 
 
 void    InitHitRect (objtype *ob, unsigned radius);
+#ifndef EMBEDDED
 void    SpawnNewObj (unsigned tilex, unsigned tiley, statetype *state);
 void    NewState (objtype *ob, statetype *state);
-
+#else
+void	SpawnNewObj(unsigned tilex, unsigned tiley, int state); /* stateenum */
+void	NewState(objtype *ob, int state); /* stateenum */
+#endif
 boolean TryWalk (objtype *ob);
 void    SelectChaseDir (objtype *ob);
 void    SelectDodgeDir (objtype *ob);
@@ -1184,9 +1264,17 @@ boolean CheckSight (objtype *ob);
 =============================================================================
 */
 
-extern  short    anglefrac;
 extern  int      facecount, facetimes;
+//#ifndef EMBEDDED
+extern  short    anglefrac;
 extern  word     plux,pluy;         // player coordinates scaled to unsigned
+/*
+#else
+extern  int    anglefrac;
+extern  unsigned     plux,pluy;         // player coordinates scaled to unsigned
+extern	boolean		noclip;
+#endif
+*/
 extern  int32_t  thrustspeed;
 extern  objtype  *LastAttacker;
 
@@ -1226,7 +1314,7 @@ void    DrawAmmo (void);
 
 extern  doorobj_t doorobjlist[MAXDOORS];
 extern  doorobj_t *lastdoorobj;
-extern  short     doornum;
+//extern  short     doornum;
 
 extern  word      doorposition[MAXDOORS];
 
@@ -1261,7 +1349,7 @@ void InitAreas (void);
 */
 
 #define s_nakedbody s_static10
-
+#ifndef EMBEDDED
 extern  statetype s_grddie1;
 extern  statetype s_dogdie1;
 extern  statetype s_ofcdie1;
@@ -1322,6 +1410,8 @@ extern  statetype s_schabbdeathcam2;
 extern  statetype s_hitlerdeathcam2;
 extern  statetype s_giftdeathcam2;
 extern  statetype s_fatdeathcam2;
+
+#endif
 
 void SpawnStand (enemy_t which, int tilex, int tiley, int dir);
 void SpawnPatrol (enemy_t which, int tilex, int tiley, int dir);
@@ -1444,13 +1534,13 @@ inline static fixed FixedMul(fixed a, fixed b)
     #define strcasecmp stricmp
     #define strncasecmp strnicmp
 #else
-    inline char* itoa(int value, char* string, int radix)
+    inline char* itoa(int value, char* string)
     {
 	    sprintf(string, "%d", value);
 	    return string;
     }
 
-    inline char* ltoa(long value, char* string, int radix)
+    inline char* ltoa(long value, char* string)
     {
 	    sprintf(string, "%ld", value);
 	    return string;

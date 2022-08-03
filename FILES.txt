@@ -1,0 +1,4 @@
+/=root
+/=root/sndw
+/=root/w3d
+0.BIN=root/sl.bin

@@ -6,46 +6,33 @@
 //#include <string.h>  /* memcpy */
 #include <ctype.h>  /* toupper */
 #include <malloc.h>
+  #include "pcmsys.h"
 extern "C" {
 
 //#include "L:\saturn\dev\sms_elf2\cdc\SEGA_CDC.H"
 #include	"C:/SaturnOrbit/SGL_302j/INC/sl_def.h"
 //#ifdef VBT
  #include "sega_cdc.h"
+ #include "sega_snd.h"
 //#endif
 
 }
-//#define VBT
-
-void /* Slave SH2 main loop (RUNS on slave SH) */
-  SPR_SlaveSHmain(void);
-void /* slave SH Initialize (RUNS on main SH) */
-  SPR_InitSlaveSH(void);  
-
 
 //
 #ifdef USE_SPRITES
-extern TEXTURE tex_spr[];
+extern TEXTURE tex_spr[SPR_NULLSPRITE+SATURN_WIDTH];
 #endif
-
-#ifdef VBT
-int CdUnlock();
-#define SYS_CDINIT1(i) \
-((**(void(**)(int))0x60002dc)(i))
-
-#define SYS_CDINIT2() \
-((**(void(**)(void))0x600029c)())
-#endif
+extern unsigned char hz;
 
 extern "C" {
 	extern void DMA_ScuInit(void);
-//	extern void SPR_InitSlaveSH(void);
 	extern void DMA_ScuMemCopy(void *dst, void *src, Uint32 cnt);
 	extern Uint32 DMA_ScuResult(void);
 	extern void memcpywh(char *dst, char *src, short width, short height, short step);// , long srchstep, long srcwstep, char flag);
-//	extern void memcpyl(void *dst, void *src, int size);
+	extern void	load_driver_binary(char * filename, void * buffer);
 }
 void SCU_DMAWait(void);
+void sc_usleep(unsigned long usec);
 
 extern void CheckWeaponChange (void);
 //extern void ShapeTest (void);
@@ -58,7 +45,7 @@ GfsDirName dir_name[MAX_DIR];
 #define SDL_FillRect(arg1, dest, arg3)	\
 	slBMBoxFill((dest)->x, (dest)->y, (dest)->x + (dest)->w - 1, (dest)->y + (dest)->h - 1, 0)
 	 */
-void Pal2CRAM( Uint16 *Pal_Data , void *Col_Adr , Uint32 suu );
+inline void Pal2CRAM( Uint16 *Pal_Data , void *Col_Adr , Uint32 suu );
 void InitCD();
 void InitCDBlock(void);
 void ChangeDir(char *dirname);
@@ -68,11 +55,11 @@ Sint32 GetFileSize(int file_id);
  debug
 */
 //Uint32 frame = 0;
-static unsigned char vbt_event[13][2];
-static int current_event=0;
-Uint32 previouscount=0;
-Uint16 previousmillis=0;
-PCM m_dat[4];
+static unsigned char vbt_event[13];
+//static int current_event=0;
+static Uint32 previouscount=0;
+static Uint16 previousmillis=0;
+//PCM m_dat[4];
 
 static	CdcPly	playdata;
 static	CdcPos	posdata;
@@ -115,18 +102,23 @@ static const Sint8	logtbl[] = {
 			8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 
 			8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8
 	};
-
-/*
- dummy
- */
-
+//--------------------------------------------------------------------------------------------------------------------------------------
+static unsigned int get_hz(void)
+{
+#define TVSTAT      (*(volatile Uint16 *)0x25F80004)
+	
+	if((TVSTAT & 1) == 0)
+		return 60;
+	else
+		return 50;
+}
 //--------------------------------------------------------------------------------------------------------------------------------------
  SDL_Surface * SDL_SetVideoMode  (int width, int height, int bpp, Uint32 flags)
 {
-	unsigned char tv_mode;
-	SDL_Surface *screen;
-	screen = (SDL_Surface*)malloc(sizeof(SDL_Surface));
-	CHECKMALLOCRESULT(screen);
+	unsigned char tv_mode=TV_320x224;
+	SDL_Surface *screeny;
+	screeny = (SDL_Surface*)malloc(sizeof(SDL_Surface));
+	CHECKMALLOCRESULT(screeny);
 	if(width==320)
 	{
 		tv_mode = TV_320x224;
@@ -149,14 +141,14 @@ static const Sint8	logtbl[] = {
 #else
 	slInitSystem(tv_mode, NULL, 1);
 #endif	
-
+	hz = get_hz();
 //	slZdspLevel(8);
 // vbt 26/07/2020
 //	slDynamicFrame(ON);
 
 	if(bpp==8)
 	{
-		slColRAMMode(CRM16_1024);
+		slColRAMMode(CRM16_2048);
 		slCharNbg1(COL_TYPE_256 , CHAR_SIZE_1x1);
 	}
 	else
@@ -165,21 +157,23 @@ static const Sint8	logtbl[] = {
 		slCharNbg1(COL_TYPE_32768 , CHAR_SIZE_1x1);
 	}
 
-//	slScrPosNbg1(toFIXED(0) , toFIXED(0));
-    slInitBitMap(bmNBG1, BM_512x256, (void *)NBG1_CEL_ADR);
+    slInitBitMap(bmNBG1, BM_512x256, (void *)VDP2_VRAM_A0);
     slBMPaletteNbg1(1);
-
-    // screen coordinates like in SDL
-//    slBitMapBase(0, 0);
+	extern Uint16 VDP2_RAMCTL;	
+	VDP2_RAMCTL = VDP2_RAMCTL & 0xFCFF;
+	extern Uint16 VDP2_TVMD;
+	VDP2_TVMD &= 0xFEFF;
+	
+    slScrAutoDisp(NBG0ON| NBG1ON);
+	
+	slScrCycleSet(0x55EEEEEE , NULL , 0x044EEEEE , NULL);
 //#define		BACK_COL_ADR		( VDP2_VRAM_A1 + 0x1fffe )	
 //	slBack1ColSet((void *)BACK_COL_ADR , RGB(14,14,14));
 //	slScrTransparent(RBG0ON);
 	
 //    slScrAutoDisp(RBG0ON| NBG0ON| NBG1ON| NBG3ON);
-    slScrAutoDisp(NBG0ON| NBG1ON);
-	
-
-/*  /// vbt à remettre
+//	VDP2_RAMCTL = VDP2_RAMCTL & 0xFCFF;
+/*  /// vbt ? remettre
 slCharNbg3(COL_TYPE_256, CHAR_SIZE_1x1); 
 slPageNbg3((void*)0x25e60000, 0, PNB_1WORD|CN_10BIT ); 
 slPlaneNbg3(PL_SIZE_1x1); 
@@ -194,12 +188,16 @@ slPriorityNbg3(7);
 	slPriorityNbg1(6);
 	slPrioritySpr0(5);
 #ifdef USE_SPRITES 	
-	slZdspLevel(7); // vbt : ne pas déplacer !!!
+	slZdspLevel(7); // vbt : ne pas d?placer !!!
 #endif	
-	screen->pixels = (unsigned char*)malloc(sizeof(unsigned char)*width*height);
-	CHECKMALLOCRESULT(screen->pixels);
-	screen->pitch = width;
-	return screen;
+	screeny->pixels = (unsigned char*)malloc(sizeof(unsigned char)*width*height);
+	
+	CHECKMALLOCRESULT(screeny->pixels);
+	screeny->pitch = width;
+	screeny->w     = width;
+	screeny->h     = height;	
+//	memset(screen->pixels,0x00,width*height);
+	return screeny;
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
 int SDL_SetColors(SDL_Surface *surface, 	SDL_Color *colors, int firstcolor, int ncolors)
@@ -207,26 +205,24 @@ int SDL_SetColors(SDL_Surface *surface, 	SDL_Color *colors, int firstcolor, int 
 	Uint16	palo[256];
 //	CHECKMALLOCRESULT(palo);
 
-	for(unsigned int i=0;i<ncolors;i++)
+	for(int i=0;i<ncolors;i++)
 	{
-		palo[i] = 0x8000 | RGB(colors[i].r>>3,colors[i].g>>3,colors[i].b>>3);
+		palo[i] = RGB(colors[i].r>>3,colors[i].g>>3,colors[i].b>>3);
 	}
 	Pal2CRAM(palo , (void *)NBG1_COL_ADR , ncolors);
-//	Pal2CRAM(palo , (void *)TEX_COL_ADR , ncolors);
-	Pal2CRAM(palo+14 , (void *)NBG0_COL_ADR , ncolors);
+	Pal2CRAM(palo+14 , (void *)NBG0_COL_ADR , ncolors);  
 	
 	return 1;
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
-int SDL_SetColorKey	(SDL_Surface *surface, Uint32 flag, Uint32 key)
+/*int SDL_SetColorKey	(SDL_Surface *surface, Uint32 flag, Uint32 key)
 {
 	return 0;
-}
+}*/
 //--------------------------------------------------------------------------------------------------------------------------------------
 static unsigned char initcddone=0;
 int SDL_Init(Uint32 flags)
 {
-	//lowram=(Uint8 *)0x00202000;
 #ifndef ACTION_REPLAY
 	if(initcddone==0)
 	{
@@ -235,16 +231,75 @@ int SDL_Init(Uint32 flags)
 		initcddone=1;
 	}
 #endif
-	DMA_ScuInit();
+//	DMA_ScuInit();
 //	SPR_InitSlaveSH();
 	SDL_InitSubSystem(flags);
 	return 0;
+}
+//--------------------------------------------------------------------------------------------------------------------------------------
+ void sound_external_audio_enable(Uint8 vol_l, Uint8 vol_r) {
+    volatile Uint16 *slot_ptr;
+
+    //max sound volume is 7
+    if (vol_l > 7) {
+        vol_l = 7;
+    }
+    if (vol_r > 7) {
+        vol_r = 7;
+    }
+
+    // Setup SCSP Slot 16 and Slot 17 for playing
+    slot_ptr = (volatile Uint16 *)(0x25B00000 + (0x20 * 16));
+    slot_ptr[0] = 0x1000;
+    slot_ptr[1] = 0x0000; 
+    slot_ptr[2] = 0x0000; 
+    slot_ptr[3] = 0x0000; 
+    slot_ptr[4] = 0x0000; 
+    slot_ptr[5] = 0x0000; 
+    slot_ptr[6] = 0x00FF; 
+    slot_ptr[7] = 0x0000; 
+    slot_ptr[8] = 0x0000; 
+    slot_ptr[9] = 0x0000; 
+    slot_ptr[10] = 0x0000; 
+    slot_ptr[11] = 0x001F | (vol_l << 5);
+    slot_ptr[12] = 0x0000; 
+    slot_ptr[13] = 0x0000; 
+    slot_ptr[14] = 0x0000; 
+    slot_ptr[15] = 0x0000; 
+
+    slot_ptr = (volatile Uint16 *)(0x25B00000 + (0x20 * 17));
+    slot_ptr[0] = 0x1000;
+    slot_ptr[1] = 0x0000; 
+    slot_ptr[2] = 0x0000; 
+    slot_ptr[3] = 0x0000; 
+    slot_ptr[4] = 0x0000; 
+    slot_ptr[5] = 0x0000; 
+    slot_ptr[6] = 0x00FF; 
+    slot_ptr[7] = 0x0000; 
+    slot_ptr[8] = 0x0000; 
+    slot_ptr[9] = 0x0000; 
+    slot_ptr[10] = 0x0000; 
+    slot_ptr[11] = 0x000F | (vol_r << 5);
+    slot_ptr[12] = 0x0000; 
+    slot_ptr[13] = 0x0000; 
+    slot_ptr[14] = 0x0000; 
+    slot_ptr[15] = 0x0000;
+
+    *((volatile Uint16 *)(0x25B00400)) = 0x020F;
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
 int SDL_InitSubSystem(Uint32 flags)
 {
 	if(flags &= SDL_INIT_AUDIO)
 	{
+		
+#ifdef PONY
+	sound_external_audio_enable(5, 5);
+	load_drv(ADX_MASTER_1536);
+	
+//	add_raw_pcm_buffer(0,SOUNDRATE,nBurnSoundLen*20);
+#else		
+		
 		char sound_map[] =  {0xff,0xff,0xff,0xff};//,0xff,0xff,0xff,0xff,0xff,0xff,0xff};
 	//slPrint("init sound                                    ",slLocate(2,21));
 #ifdef ACTION_REPLAY
@@ -260,6 +315,9 @@ unsigned char *sndDrvAddr;
 		sndDrvAddr = NULL;		
 //	slPrint("                                    ",slLocate(2,21));
 #endif
+
+
+#endif			
 	}
 
 	if(flags &= SDL_INIT_TIMER)
@@ -349,31 +407,44 @@ int SDL_LockSurface(SDL_Surface *surface)
 	return 0;
 }*/
 //--------------------------------------------------------------------------------------------------------------------------------------
-Uint32 SDL_MapRGB (SDL_PixelFormat *format, Uint8 r, Uint8 g, Uint8 b)
+/*Uint32 SDL_MapRGB (SDL_PixelFormat *format, Uint8 r, Uint8 g, Uint8 b)
 {
-	return 0x8000 | RGB(r>>3,g>>3,b>>3);
-}
+	return RGB(r>>3,g>>3,b>>3);
+}*/
 //--------------------------------------------------------------------------------------------------------------------------------------
+//int nb_unlock =0;
+
 void SDL_UnlockSurface(SDL_Surface *surface)
 {
 	unsigned short i; // vbt : le plus rapide
+	unsigned char *surfacePtr = (unsigned char*)surface->pixels;
+	unsigned int *nbg1Ptr = (unsigned int*)VDP2_VRAM_A0;
+
 	for (i = 0; i < screenHeight; i++) 
 	{
-//		DMA_ScuMemCopy((unsigned char*)(NBG1_CEL_ADR + (i<<9)), (unsigned char*)(surface->pixels + (i * screenWidth)), screenWidth); // vbt 20-22fps
+//		DMA_ScuMemCopy((unsigned char*)(VDP2_VRAM_A0 + (i<<9)), (unsigned char*)(surface->pixels + (i * screenWidth)), screenWidth); // vbt 20-22fps
 //		SCU_DMAWait();
-//		memcpyl((unsigned long*)(NBG1_CEL_ADR + (i<<9)), (unsigned long*)(surface->pixels + (i * screenWidth)), screenWidth); // vbt : 22-24fps
+//		memcpyl((unsigned long*)(VDP2_VRAM_A0 + (i<<9)), (unsigned long*)(surface->pixels + (i * screenWidth)), screenWidth); // vbt : 22-24fps
 // vbt : remttre la copie dma		
-		slDMACopy((unsigned long*)(surface->pixels + (i * screenWidth)),(void *)(NBG1_CEL_ADR + (i<<9)),screenWidth);
+//		slDMACopy((unsigned long*)surfacePtr,(void *)(VDP2_VRAM_A0 + (i<<9)),screenWidth);
+		slDMACopy((unsigned long*)surfacePtr,(void *)nbg1Ptr,screenWidth); // vbt à remettre !!!
+		surfacePtr+=screenWidth;
+//		nb_unlock+=screenWidth;
+		nbg1Ptr+=128;
 	}
+	slDMAWait();
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
 int SDL_OpenAudio(SDL_AudioSpec *desired, SDL_AudioSpec *obtained)
 {
-	Sint32		oct, shift_freq, fns;
-	Uint8 i;
 	Sint8 err=0;
 	memcpy(obtained,desired,sizeof(SDL_AudioSpec));
-
+#ifdef PONY	
+	
+#else
+	Sint32		oct, shift_freq, fns;
+	Uint8 i;
+	
 	for (i=0; i<4; i++)
 	{
 		m_dat[i].mode = 0;
@@ -398,6 +469,7 @@ int SDL_OpenAudio(SDL_AudioSpec *desired, SDL_AudioSpec *obtained)
 		}	 */
 //		slSynch();  // vbt 26/05/2019 remis // change rien
 	}
+#endif	
 	return err;
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
@@ -408,31 +480,48 @@ void SDL_CloseAudio(void)
 //--------------------------------------------------------------------------------------------------------------------------------------
 void SDL_PauseAudio(int pause_on)
 {
+#ifdef PONY	
+	Uint8 i;
+	for (i=0;i<4;i++)
+		pcm_cease(i);
+#else
 	Uint8 i;
 	for (i=0;i<4;i++)
 		slPCMOff(&m_dat[i]);
+#endif
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
+
 int SDL_UpperBlit (SDL_Surface *src, SDL_Rect *srcrect, SDL_Surface *dst, SDL_Rect *dstrect)
 {
-if((srcrect)!=NULL)
-	for( Sint16 i=0;i<srcrect->h;i++)
-	{
-//		memcpyl((unsigned long*)(dst->pixels + ((i + dstrect->y) * dst->pitch) + dstrect->x),(unsigned long*)(src->pixels + ((i + srcrect->y) * src->pitch) + srcrect->x),srcrect->w);
-		slDMACopy((unsigned long*)(src->pixels + ((i + srcrect->y) * src->pitch) + srcrect->x),(unsigned long*)(dst->pixels + ((i + dstrect->y) * dst->pitch) + dstrect->x),srcrect->w);
-	}	
+	unsigned char *surfacePtr = (unsigned char*)src->pixels + ((srcrect->y) * src->pitch) + srcrect->x;
+	unsigned int *nbg1Ptr = (unsigned int*)(VDP2_VRAM_A0 + (dstrect->y<<9)+ dstrect->x);
+	
+	if((srcrect)!=NULL)
+		for( Sint16 i=0;i<srcrect->h;i++)
+		{
+//			slDMACopy((unsigned long*)((byte*)src->pixels + ((i + srcrect->y) * src->pitch) + srcrect->x),(unsigned long*)(void *)(VDP2_VRAM_A0 + ((i + dstrect->y)<<9)+ dstrect->x),srcrect->w);
+//			memcpyl((unsigned long*)nbg1Ptr, (unsigned long*)surfacePtr, srcrect->w); // vbt : 22-24fps
+			slDMACopy((unsigned long*)surfacePtr,(unsigned long*)(void *)nbg1Ptr,srcrect->w); // vbt à remettre
+//			slDMACopy((unsigned long*)((byte*)src->pixels + ((i + srcrect->y) * src->pitch) + srcrect->x),(unsigned long*)(void *)(VDP2_VRAM_A0 + ((i + dstrect->y)<<9)+ dstrect->x),srcrect->w);
+			surfacePtr+=src->pitch;
+//			    nb_unlock+=srcrect->w;
+			nbg1Ptr+=128;
+		}
 	return 0;
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
-void SDL_UpdateRects (SDL_Surface *screen, int numrects, SDL_Rect *rects)
+/*void SDL_UpdateRects (SDL_Surface *screen, int numrects, SDL_Rect *rects)
 {
 //	slBMPut(0, 0, 320-1, 240-1, (Sint8*)screen->pixels);
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
+
 void SDL_UpdateRect (SDL_Surface *screen, Sint32 x, Sint32 y, Uint32 w, Uint32 h)
 {
 //slPrint("SDL_UpdateRect  empty       ",slLocate(10,22));
 }
+*/
 //--------------------------------------------------------------------------------------------------------------------------------------
 
 int SDL_FillRect (SDL_Surface *dst, SDL_Rect *dstrect, Uint32 color)
@@ -441,18 +530,21 @@ int SDL_FillRect (SDL_Surface *dst, SDL_Rect *dstrect, Uint32 color)
 		if((dstrect)!=NULL)
 		{
 	//		slBMBoxFill(dstrect->x, dstrect->y, dstrect->x + dstrect->w - 1, dstrect->y + dstrect->h - 1, color);
-		Uint8*d = (Uint8*)dst->pixels + dstrect->x; 
-
-		for( Sint16 i=0;i<dstrect->h;i++)
+			Uint8*d = (Uint8*)dst->pixels + dstrect->x + dstrect->y*screenWidth; 
+			int w = dstrect->w;
+			int p = dst->pitch;
+			for( Sint16 i=0;i<dstrect->h;i++)
 			{
 				memset(d,color,dstrect->w);
 				d+=dst->pitch;
+//				nb_unlock+=dst->pitch;
 			}
 		}
 		else
 		{
 	//		slBMBoxFill(dstrect->x, dstrect->y, dstrect->x + dstrect->w - 1, dstrect->y + dstrect->h - 1, color);
 		   memset(dst->pixels,color,screenWidth*screenHeight);
+//		   nb_unlock+=screenWidth*screenHeight;
 		}
 
 	return 0;
@@ -460,26 +552,22 @@ int SDL_FillRect (SDL_Surface *dst, SDL_Rect *dstrect, Uint32 color)
 //--------------------------------------------------------------------------------------------------------------------------------------
 SDL_Surface * SDL_CreateRGBSurface(Uint32 flags, int width, int height, int depth, Uint32 Rmask, Uint32 Gmask, Uint32 Bmask, Uint32 Amask)
 {
-	SDL_Surface *screen;
-	screen = (SDL_Surface*)malloc(sizeof(SDL_Surface));
-//	CHECKMALLOCRESULT(screen);
-	screen->pixels = (unsigned char*)malloc(sizeof(unsigned char)*width*height);
-//	CHECKMALLOCRESULT(screen->pixels);
-	screen->pitch = width;
-	screen->w     =	width;
-	screen->h     =	height;
+	SDL_Surface *screeny;
+	screeny = (SDL_Surface*)malloc(sizeof(SDL_Surface));
+	CHECKMALLOCRESULT(screeny);
+	screeny->pixels = (unsigned char*)malloc(sizeof(unsigned char)*width*height);
+//	screeny->pixels = (unsigned char*)0x002E0000;
+	CHECKMALLOCRESULT(screeny->pixels);
+	screeny->pitch = width;
+	screeny->w     = width;
+	screeny->h     = height;
 	
-	return screen;
+	return screeny;
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
 void SDL_Quit(void)
 {
 	SYS_Exit(0);
-}
-//--------------------------------------------------------------------------------------------------------------------------------------
-int SDL_SetPalette(SDL_Surface *surface, int flags, SDL_Color *colors, int firstcolor, int ncolors)
-{
-	return 0;
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
 char * SDL_GetError(void)
@@ -489,19 +577,25 @@ char * SDL_GetError(void)
 //--------------------------------------------------------------------------------------------------------------------------------------
 const SDL_VideoInfo * SDL_GetVideoInfo(void)
 {
-		 SDL_VideoInfo *vidInfo;
-		 vidInfo = (SDL_VideoInfo *)malloc(sizeof(SDL_VideoInfo));
-         CHECKMALLOCRESULT(vidInfo);
-		 vidInfo->vfmt = (SDL_PixelFormat*)malloc(sizeof(SDL_PixelFormat));
-         CHECKMALLOCRESULT(vidInfo->vfmt);
-		 vidInfo->vfmt->BitsPerPixel = 8;
-		 return vidInfo;
+		 SDL_VideoInfo vidInfo;
+//		 vidInfo = (SDL_VideoInfo *)malloc(sizeof(SDL_VideoInfo));
+//         CHECKMALLOCRESULT(vidInfo);
+		 vidInfo.vfmt = (SDL_PixelFormat*)malloc(sizeof(SDL_PixelFormat));
+         CHECKMALLOCRESULT(vidInfo.vfmt);
+		 vidInfo.vfmt->BitsPerPixel = 8;
+		 return &vidInfo;
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
 SDL_Rect ** SDL_ListModes(SDL_PixelFormat *format, Uint32 flags)
 {
 	return (SDL_Rect **)-1;
 }
+//--------------------------------------------------------------------------------------------------------------------------------------
+/*int SDL_SetPalette(SDL_Surface *surface, int flags, SDL_Color *colors, int firstcolor, int ncolors)
+{
+	SDL_SetColors(surface, colors, firstcolor, ncolors);
+	return 0;
+}*/
 //--------------------------------------------------------------------------------------------------------------------------------------
 /*
 void SDL_WM_SetCaption(const char *title, const char *icon)
@@ -548,127 +642,86 @@ void SDL_WM_SetIcon(SDL_Surface *icon, Uint8 *mask)
 sc_1, sc_2, sc_3, sc_4
 */
 
-int SDL_PollEvent(SDL_Event *event)
+void SDL_PollEvent(int start,int end, SDL_Event *event)
 {
-	Uint16 push = 0, data = 0;
+	Uint16 data = 0;
 	Uint8 i,found=0;
- 				 //LastScan=0;
-	//event->type = SDL_NOEVENT;
-	//event->key.keysym.sym = SDLK_FIRST;	  
-//slPrint("SDL_PollEvent       ",slLocate(3,22));	
+
 	if(Per_Connect1) {
-		push = ~Smpc_Peripheral[0].push;
-		data = ~Smpc_Peripheral[0].data;
+//		push = ~Smpc_Peripheral[0].push;
+		if(start!=8)
+			data = ~Smpc_Peripheral[0].data;
+		else
+			data = ~Smpc_Peripheral[0].push;
 	}
-/*	if(Per_Connect2) {
-		push |= ~Smpc_Peripheral[15].push;
-		data |= ~Smpc_Peripheral[15].data;
-	}		*/
-	/*
-	 quit?
-	*/
-			
+
 	if(data & PER_DGT_ST && data & PER_DGT_TA && data & PER_DGT_TB && data & PER_DGT_TC) 
 	{
 		event->type = SDL_QUIT;
-		return 1;
+		return ;
 	}
+	unsigned char *evt=(unsigned char *)vbt_event+start;
 
-	for (i=0;i <13; i++)
+	for (i=start;i <end; i++)
 	{
 		if(data & pad_asign[i])
 		{
-			if(vbt_event[i][0]!=SDL_KEYDOWN)
+			if(*evt!=SDL_KEYDOWN)
 			{
-				vbt_event[i][0]=SDL_KEYDOWN;
-				vbt_event[i][1]=1;
+				*evt=SDL_KEYDOWN;
+				found=1;
+				break;
 			}
 		}
-		else/* if(push & pad_asign[i])		 */
+		else
 		{
-			
-			if(vbt_event[i][0]==SDL_KEYDOWN)
+			if(*evt==SDL_KEYDOWN)
 			{
-				vbt_event[i][0]=SDL_KEYUP;
-				vbt_event[i][1]=1;
-				 //control_status =0;
-				 //LastScan=0;
-			}/*		  
-			else	 if(vbt_event[i][0]==SDL_KEYUP)
-			{
-				vbt_event[i][0]=0;
-				vbt_event[i][1]=0;
-				 //LastScan=0;
-			}			*/
-			else
-			{
-			  	vbt_event[i][1]=0;				 
-				vbt_event[i][0]=0;
-				 //LastScan=0;
+				*evt=SDL_KEYUP;
+				found=1;
+				break;
 			}
+			*evt=0;
 		}
+		evt++;
 	}	  
-	for (i=0;i <13; i++)
-	{
-		if (vbt_event[i][1]==1)
-		{
-			////slPrintHex(i,slLocate(3,21));
-			current_event=i;
-			found=1;
-			break;
-		}
-	}
-
 /*
-	PER_DGT_KU,
-	PER_DGT_KD,
-	PER_DGT_KR,
-	PER_DGT_KL,
-	PER_DGT_TA,
-	PER_DGT_TB,
-	PER_DGT_TC,
-	*/
+	if(start==0)
+	{
+		if(data & pad_asign[0])
+		{
+			if(! (data & pad_asign[2]))
+			Keyboard[sc_RightArrow]=0;
 
-	
-	if(data & pad_asign[0])
-    {
-		if(! (data & pad_asign[2]))
-		Keyboard[sc_RightArrow]=0;//vbt_event[2][1]=0;
+			if(! (data & pad_asign[3]))
+			Keyboard[sc_LeftArrow]=0;
+		}
 
-		if(! (data & pad_asign[3]))
-		Keyboard[sc_LeftArrow]=0;//vbt_event[3][1]=0;
-    }
+		if(data & pad_asign[1])
+		{
+			if(! (data & pad_asign[2]))
+			Keyboard[sc_RightArrow]=0;
 
-	if(data & pad_asign[1])
-    {
-		if(! (data & pad_asign[2]))
-		Keyboard[sc_RightArrow]=0;//vbt_event[2][1]=0;
+			if(! (data & pad_asign[3]))
+			Keyboard[sc_LeftArrow]=0;
+		}
 
-		if(! (data & pad_asign[3]))
-		Keyboard[sc_LeftArrow]=0;//vbt_event[3][1]=0;
-    }
+		if(data & pad_asign[2])
+			Keyboard[sc_RightArrow]=1;
 
-	if(data & pad_asign[2])
-		Keyboard[sc_RightArrow]=1;
-
-	if(data & pad_asign[3])
-		Keyboard[sc_LeftArrow]=1;
-	//IN_ClearKeysDown();
-
+		if(data & pad_asign[3])
+			Keyboard[sc_LeftArrow]=1;
+	//	IN_ClearKeysDown();
+	}
+*/
 	if(found)
 	{
-		/*char toto[500];
-		sprintf(toto,"evt %d action %d key %d",vbt_event[current_event][0],vbt_event[current_event][1],event->key.keysym.sym );
-				//slPrint(toto,slLocate(3,25));	 */
-		event->type = 	 vbt_event[current_event][0];
-		if(vbt_event[current_event][0]==SDL_KEYUP)
+		event->type = *evt;
+		if(*evt==SDL_KEYUP)
 		{
-			vbt_event[current_event][0] = SDL_NOEVENT;
-			vbt_event[i][1]=0;
+			*evt = SDL_NOEVENT;
 		}
-		//event->type = SDL_KEYDOWN;
-
-		switch(current_event)
+		switch(i)
 		{
 			case 4:/*PER_DGT_TA: */
 			event->key.keysym.sym = SDLK_KP_ENTER;
@@ -679,92 +732,75 @@ int SDL_PollEvent(SDL_Event *event)
 			break;	
 			
 			case 6:/*PER_DGT_TC: */
-			case 10:/*PER_DGT_TZ: */
 			event->key.keysym.sym = SDLK_RCTRL;
-			break;	
+			break;			
+	
+			case 7:/*PER_DGT_ST: */
+			event->key.keysym.sym = SDLK_ESCAPE;
+			break;
 
 			case 8:/*PER_DGT_TX: */
-			event->key.keysym.sym = SDLK_RALT;
+//			event->key.keysym.sym = SDLK_RALT;
+			buttonstate[bt_prevweapon] = true;
+			CheckWeaponChange ();
+			event->type = SDL_NOEVENT;			
 			break;
 			
 			case 9:/*PER_DGT_TY: */
-			event->key.keysym.sym = SDLK_RSHIFT;
+//			event->key.keysym.sym = SDLK_RSHIFT;
+			buttonstate[bt_nextweapon] = true;
+			CheckWeaponChange ();
+			event->type = SDL_NOEVENT;			
 			break;	
 
+			case 10:/*PER_DGT_TZ: */
+			event->key.keysym.sym = SDLK_RSHIFT; // speed
+			break;
+
 			case 11:/*PER_DGT_TL: */
-			//event->key.keysym.sym = 
-			buttonstate[bt_prevweapon] = true;
-			CheckWeaponChange ();
+			event->key.keysym.sym = SDLK_RALT;	// strafe		
+//			buttonstate[bt_prevweapon] = true;
+//			CheckWeaponChange ();
 			break;	
 
 			case 12:/*PER_DGT_TR: */
-			//event->key.keysym.sym = 
-			buttonstate[bt_nextweapon] = true;
-			CheckWeaponChange ();
-			break;	
-
-			case 7:/*PER_DGT_ST: */
-				////slPrint("gros connard",slLocate(3,24));
-			event->key.keysym.sym = SDLK_ESCAPE;
+			event->key.keysym.sym = SDLK_RALT;	// strafe		
+//			buttonstate[bt_nextweapon] = true;
+//			CheckWeaponChange ();
 			break;	
 
 			case 3:/*PER_DGT_KL: */
-				event->key.keysym.sym = SDLK_KP4;
+				event->key.keysym.sym = SDLK_LEFT;
 			break;	
 
 			case 2:/*PER_DGT_KR: */
-				event->key.keysym.sym = SDLK_KP6;
+				event->key.keysym.sym = SDLK_RIGHT;
 			break;	
 
 			case 1:/*PER_DGT_KD: */
-				////slPrint("gros ggggg",slLocate(3,20));
-			event->key.keysym.sym = SDLK_KP2;
+			event->key.keysym.sym = SDLK_DOWN;
 			break;	
 
 			case 0:/*PER_DGT_KU: */
-				////slPrint("gros ggggg",slLocate(3,20));
-			event->key.keysym.sym = SDLK_KP8;
+			event->key.keysym.sym = SDLK_UP;
 			break;	
 
 			default:
-				////slPrint("pas trouvé",slLocate(3,20));
-				//event->key.keysym.sym =999;
-				//event->type = SDL_NOEVENT;
-				event->key.keysym.sym = SDLK_LAST;//SDLK_FIRST;	  
-				break;
+			event->key.keysym.sym = SDLK_LAST;//SDLK_FIRST;
+			break;
 		}
-		return 1;
+		return;
 	}
-	//else
-	//{
-//slPrint("IN_ClearKeysDown       ",slLocate(3,22));	
-		
-	IN_ClearKeysDown();
-			event->type = SDL_KEYUP;
-			//vbt_event[current_event][0] = SDL_NOEVENT;
-			//vbt_event[i][1]=0;
-			//event->key.keysym.sym = SDLK_LAST;	
-	//}
-	for (i=0;i <13; i++)
-	{
-	//	if (vbt_event[i][1]==1)
-		{
-				vbt_event[i][0]=0;
-				vbt_event[i][1]=0;
-		}
-	}
-	//control_status =0;
-	//LastScan=0;
-	//event->type = SDL_KEYUP;
-	//event->key.keysym.sym = SDLK_LAST;	  
-//slPrint("SDL_PollEvent end       ",slLocate(3,22));		
-	return 0;
+	//IN_ClearKeysDown();
+	event->type = SDL_KEYUP;
+
+//	return found;
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
+#if 0
 int SDL_WaitEvent(SDL_Event *event)
 {
 	//event->type = SDL_NOEVENT;
-#if 0
 	if (event->type== SDL_KEYUP) {
 		event->type = SDL_NOEVENT;
 		event->key.keysym.sym = SDLK_FIRST;	
@@ -898,9 +934,9 @@ int SDL_WaitEvent(SDL_Event *event)
 			return 1;
 		}
 	} while(event->type == SDL_NOEVENT);
-#endif
 	return 0;
 }
+#endif
 /*
 //--------------------------------------------------------------------------------------------------------------------------------------
 void SDL_DestroyMutex(SDL_mutex *mutex)
@@ -920,11 +956,15 @@ Mix_Chunk *Mix_LoadWAV_RW(SDL_RWops *src, int freesrc)
 //--------------------------------------------------------------------------------------------------------------------------------------
 int Mix_PlayChannel (int channel, Mix_Chunk *chunk, int loops)
 {
-	unsigned char i;
-//	slPrintHex(chunk->alen,slLocate(2,10));
+
+//	slPrintHex(channel,slLocate(2,10));
 //	slPrintHex(&chunk->abuf[0],slLocate(2,11));
 //	slPCMOn(sounds[chunk].pcm, sounds[chunk].data, sounds[chunk].size);
-
+#ifdef PONY
+	pcm_play(channel, PCM_SEMI, 6);
+#else
+	unsigned char i;
+	
 	if(chunk->alen>0 && chunk->alen <100000)
 	for(i=0;i<4;i++)
 	{
@@ -933,31 +973,94 @@ int Mix_PlayChannel (int channel, Mix_Chunk *chunk, int loops)
 			//slPCMOff(&m_dat[i]);
 			//slPCMParmChange(&m_dat[i]);
 			slSndFlush() ;
-// vbt 26/07/2020 : à remettre	
+// vbt 26/07/2020 : ? remettre	
 				m_dat[i].mode= _PCM8Bit;
 			slPCMOn(&m_dat[i],chunk->abuf,chunk->alen);
 				break;
 		}		 
 	}
+#endif
 	return 1;
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
 Uint32 SDL_GetTicks(void)
 {
-	Uint32 tmp = TIM_FRT_CNT_TO_MCR(TIM_FRT_GET_16());
-	Uint32 tmp2 = tmp/ 1000;
-	
-	previouscount += (tmp+previousmillis) / 1000; 
-	TIM_FRT_SET_16(0);
-	previousmillis= (tmp-(tmp2*1000));
+    Uint32 tmp = TIM_FRT_CNT_TO_MCR(TIM_FRT_GET_16())+previousmillis;
+    Uint32 tmp2 = tmp/ 1000;
+
+    previouscount += tmp2;
+    TIM_FRT_SET_16(0);
+    previousmillis= (tmp-(tmp2*1000));
     //set_imask(imask);
-	//
-	return previouscount;
+    //
+    return previouscount;
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
 void SDL_Delay(long delay)
 {
+//	sc_usleep(delay);
+}
+//--------------------------------------------------------------------------------------------------------------------------------------
+#define TVSTAT      (*(volatile Uint16 *)0x25F80004)
 
+void wait_vblank(int nb)
+{
+	for(int i=0;i<nb;i++)
+	{
+		 while((TVSTAT & 8) == 8);
+		 while((TVSTAT & 8) == 0);		 
+	}
+}
+//--------------------------------------------------------------------------------------------------------------------------------------
+void sc_tmr_start(void)
+{
+    TIM_FRT_INIT(8); // 8, 32 or 128
+    TIM_FRT_SET_16(0);
+}
+//--------------------------------------------------------------------------------------------------------------------------------------
+unsigned short sc_tmr_lap(void)
+{
+    return (TIM_FRT_GET_16());
+}
+//--------------------------------------------------------------------------------------------------------------------------------------
+unsigned short sc_tmr_lap_usec(void)
+{
+    Float32 f = TIM_FRT_CNT_TO_MCR(TIM_FRT_GET_16());
+    return ((unsigned short)(f));
+}
+//--------------------------------------------------------------------------------------------------------------------------------------
+unsigned long sc_tmr_tick2usec(unsigned long tick)
+{
+    Float32 f = TIM_FRT_CNT_TO_MCR(tick);
+    return ((unsigned long)(f));
+}
+//--------------------------------------------------------------------------------------------------------------------------------------
+void sc_tick_sleep(unsigned short tick)
+{
+    sc_tmr_start();
+    while(sc_tmr_lap() < tick);
+}
+//--------------------------------------------------------------------------------------------------------------------------------------
+void sc_usleep(unsigned long usec)
+{
+    /* Convert delay to tick value. */
+    unsigned long delay_tick = 0;
+    if(usec < 50*1000)
+    { /* Compute tick value at good precision for delay lower than 50 msec. */
+        delay_tick = (usec*60000) / (sc_tmr_tick2usec(60000));
+    }
+    else
+    { /* Poor precision, but no overflow (up to 42 seconds) for higher values. */
+        delay_tick = (usec*100) / (sc_tmr_tick2usec(100));
+    }
+
+    /* Sleep at most 60000 ticks. */
+    unsigned long i;
+    for(i=0; i<delay_tick; i+=60000)
+    {
+        unsigned long s = ((i+60000) < delay_tick ? 60000 : delay_tick - i);
+        sc_tick_sleep(s);
+    }
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
 void Pal2CRAM( Uint16 *Pal_Data , void *Col_Adr , Uint32 suu )
@@ -1068,8 +1171,8 @@ void	satPlayMusic( Uint8 track ){
     CDC_PLY_STNO( &playdata ) = (Uint8) (track + tno[0]);
     CDC_PLY_ETNO( &playdata ) = (Uint8) (track + tno[0]);
     CDC_CdPlay(&playdata);
-	slCDDAOn(127,127,0,0);
-	slSndVolume(127);
+//	slCDDAOn(127,127,0,0);
+//	slSndVolume(127);
 }
 //--------------------------------------------------------------------------------------------------------------------------------------
 Uint16 SWAP_BYTES_16(Uint16 a) {
@@ -1091,22 +1194,6 @@ Uint32 SWAP_BYTES_32(Uint32 a) {
 
 
 
-}
-//-------------------------------------------------------------------------------------------------------------------------------------
-extern "C" {
-void CSH_Purge(void *adrs, Uint32 P_size)
-{
-	typedef Uint32 LineX[0x10/sizeof(Uint32)];	/* ƒ‰ƒCƒ“‚Í 0x10 ƒoƒCƒg’PˆÊ */
-	LineX *ptr, *end;
-	Uint32 zero = 0;
-
-	ptr = (void*)(((Uint32)adrs & 0x1fffffff) | 0x40000000);	/* ƒLƒƒƒbƒVƒ…ƒp[ƒW—Ìˆæ */
-	end = (void*)((Uint32)ptr + P_size - 0x10);	/* I—¹ƒ|ƒCƒ“ƒ^i-0x10 ‚Íƒ|ƒXƒgƒCƒ“ƒNƒŠƒƒ“ƒg‚Ìˆ×j */
-	ptr = (void*)((Uint32)ptr & -sizeof(LineX));	/* ƒ‰ƒCƒ“ƒAƒ‰ƒCƒƒ“ƒg‚É®‡ */
-	do {
-		(*ptr)[0] = zero;			/* ƒLƒƒƒbƒVƒ…ƒp[ƒW */
-	} while (ptr++ < end);			/* ƒ|ƒXƒgƒCƒ“ƒNƒŠƒƒ“ƒg‚ÍƒfƒBƒŒƒCƒXƒƒbƒgŠˆ—p‚Ìˆ× */
-}
 }
 //-------------------------------------------------------------------------------------------------------------------------------------
 
@@ -1135,72 +1222,6 @@ void SDL_FreeWAV(Uint8 *audio_buf)
 
 SDL_AudioSpec * SDL_LoadWAV_RW(SDL_RWops *src, int freesrc, SDL_AudioSpec *spec, Uint8 **audio_buf, Uint32 *audio_len)
 {
-#ifndef ACTION_REPLAY
-	Uint8 i, fileId;
-	long fileSize;
-    char directory[64];
-	char filename[15];
-	unsigned char *mem_buf;
-	if(strlen(src->hidden.stdio.name)>5)
-	{
-		for(i=0;i<strlen(src->hidden.stdio.name);i++)
-			if (src->hidden.stdio.name[i]=='/')	break;
-
-		if(i<strlen(src->hidden.stdio.name) )
-		{
-			strncpy(directory,src->hidden.stdio.name,i);
-			 directory[i]='\0';
-
-			strcpy(filename,&src->hidden.stdio.name[i+1]);
-		  
-			i=0;
-			while (directory[i])
-			{
-				directory[i]= toupper(directory[i]);
-				i++;
-			}			 
-			ChangeDir(directory);
-
-			slPrint(directory,slLocate(1,18));
-			slPrint(filename,slLocate(1,19));
-		}
-	}
-	else
-		strcpy(filename,src->hidden.stdio.name);
-	i=0;
-	while (filename[i])
-	{
-		filename[i]= toupper(filename[i]);
-		i++;
-	}	  
-
-	fileId = GFS_NameToId((Sint8*)filename);
-	fileSize = GetFileSize(fileId);
-
-	 if (fileSize<80000)
-		mem_buf = (unsigned char*)malloc(fileSize)	;
-	else if (fileSize<90000)
-		mem_buf =  (Uint8 *)(0x00202000)	;
-	else
-		   mem_buf = (Uint8 *)(0x00232000);
-
-	GFS_Load(fileId, 0, mem_buf, fileSize);
-	audio_buf[0] = mem_buf;
-	*audio_len = fileSize;
-	if (fileSize<0x900)
-	*audio_len = 0x900;
-	ChangeDir(NULL);
-		return spec;
-#else
-
-	 if(strcmp(src->hidden.stdio.name,"sounds/tune5.wav")==0)
-	{
-		audio_buf[0] = tune0;
-		*audio_len = sizeof(tune0);
-	}	  
-#endif
-  	//slPrint("                                    ",slLocate(2,21));
-	return spec;
 }
 */
 /*int Mix_OpenAudio(int frequency, Uint16 format, int channels, int chunksize)
@@ -1269,132 +1290,10 @@ SDL_RWops *SDL_RWFromFile(const char *file, const char *mode)
 }*/
 //--------------------------------------------------------------------------------------------------------------------------------------
 
-#ifdef VBT
-
-
-
-int CdUnlock (void)
-{
-
-Sint32 ret;
-CdcStat stat;
-volatile int delay;
-unsigned int vbt=0;
-SYS_CDINIT1(3);
-
-SYS_CDINIT2();
-
-do {
-
-for(delay = 100000; delay; delay--);
-
-ret = CDC_GetCurStat(&stat);
-} while ((ret != 0) || (CDC_STAT_STATUS(&stat) == 0xff));
-
-
-return (int) CDC_STAT_STATUS(&stat);
-
-}
-
-
-
-#endif
-#endif
-
-
- #if 0
-
-volatile void **SPR_SlaveSHEntry
-/*  = (void **)0x6000250; 			 95-7-27	*/
-  = (volatile void **)0x6000250;  /* 95-7-27  BOOT ROMs dispatch address */
-
-volatile Uint8 *SPR_SMPC_COM = (Uint8 *)0x2010001F;   /* SMPC command register */
-volatile Uint8 *SPR_SMPC_RET = (Uint8 *)0x2010005f;   /* SMPC result register */
-volatile Uint8 *SPR_SMPC_SF  = (Uint8 *)0x20100063;   /* SMPC status flag */
-
-const Uint8 SPR_SMPC_SSHON  = 0x02;          /* SMPC slave SH on command */
-const Uint8 SPR_SMPC_SSHOFF = 0x03;          /* SMPC slave SH off command */
-
-typedef void PARA_RTN(void *parm);
-
-Uint32
-  *SPR_SlaveCommand  = (Uint32 *)0;          /* MASTER to SLAVE command AREA */
-
-Uint32
-  SPR_SlaveState    = (Uint32)0;             /* SLAVE to MASTER state  AREA */
-
-Uint32
-  SPR_SlaveParam    = (Uint32)0;             /* MASTER to SLAVE parameter  AREA */
- 
-void /* Slave SH2 main loop (RUNS on slave SH) */
-  SPR_SlaveSHmain(void)
-{
-/*    const Uint32 RUNNING = 1;		95-7-27	unuse
-    const Uint32 WAITING = 0;
-*/
-
-    /* Wait until SlaveSHReqCode is set */
-    /* then call function for SlaveSHReqCode */
-    set_imask(0xf);
-    *(volatile Uint16 *)0xfffffee2 = 0x0000;  /* IPRA int disable */
-    *(volatile Uint16 *)0xfffffe60 = 0x0000;  /* IPRB int disable */
-    *(volatile Uint8 *)0xfffffe10  = 0x01;    /* TIER FRT INT disable */
-    while(1){
-	/* Use "FRT InputCaptureFlag" Poling for wait command from Master */
-        if((*(volatile Uint8 *)0xfffffe11 & 0x80) == 0x80){
-	   *(Uint8 *)0xfffffe11 = 0x00; /* FTCSR clear */
-	   if((*(void (*)(void*))*(void **)((Uint32)&SPR_SlaveCommand+0x20000000)))
-           {
-             /* chache parse all */
-             *(volatile Uint16 *)0xfffffe92 |= 0x10;
-	     (*(void (*)(void*))*(void **)((Uint32)&SPR_SlaveCommand+0x20000000))
-                                                         ((void*)SPR_SlaveParam);
-             /* frt inp to master */
-             *(volatile Uint16 *)0x21800000 = 0xffff;
-	   }
-	}
-    }
-}
- 
-  
-void  SPR_RunSlaveSH(PARA_RTN *routine, void *parm)
-{
-    SPR_SlaveCommand = (Uint32*)routine;
-    SPR_SlaveParam   = (Uint32)parm;
-    *(volatile Uint16 *)0x21000000 = 0xffff;
-}
-
-
-void  SPR_WaitEndSlaveSH(void)
-{
-    while((*(volatile Uint8 *)0xfffffe11 & 0x80) != 0x80);
-    *(volatile Uint8 *)0xfffffe11 = 0x00; /* FTCSR clear */
-    *(volatile Uint16 *)0xfffffe92 |= 0x10; /* chache parse all */
-}
-
-void /* slave SH Initialize (RUNS on main SH) */
-  SPR_InitSlaveSH(void)
-{
-    volatile Uint16 i;
-
-    *(volatile Uint8 *)0xfffffe10  = 0x01;    /* TIER FRT INT disable */
-    SPR_SlaveState = 0;                /* set RUNNING state */
-    /* SlaveSH ???????????? */
-    while((*SPR_SMPC_SF & 0x01) == 0x01);
-    *SPR_SMPC_SF = 1;                 /* --- SMPC StatusFlag SET */
-    *SPR_SMPC_COM = SPR_SMPC_SSHOFF;      /* --- Slave SH OFF SET */
-    while((*SPR_SMPC_SF & 0x01) == 0x01);
-    for(i = 0 ; i < 1000; i++);   /* slave reset assert length */
-    *(void **)SPR_SlaveSHEntry = (void *)&SPR_SlaveSHmain; /* dispatch address set */
-    /* SlaveSH ???????????? */
-    *SPR_SMPC_SF = 1;                 /* --- SMPC StatusFlag SET */
-    *SPR_SMPC_COM = SPR_SMPC_SSHON;       /* --- Slave SH ON SET */
-    while((*SPR_SMPC_SF & 0x01) == 0x01);
-}
 #endif
 
 #if 0 // code pour faire le sol
-// slScrTransparent(RBG0ON); à mettre dans l'affichages des menus!!!
+// slScrTransparent(RBG0ON); ? mettre dans l'affichages des menus!!!
 #define		RBG0RB_CEL_ADR			(VDP2_VRAM_A0            )	
 #define		RBG0_PRA_ADR			(VDP2_VRAM_A1   + 0x1fe00)
 #define		RBG0_KTB_ADR			(VDP2_VRAM_A1            )	

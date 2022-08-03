@@ -1,7 +1,5 @@
 // WL_PLAY.C
-//#define USE_SPRITES 1
 #include "wl_def.h"
-#pragma hdrstop
 
 #include "wl_cloudsky.h"
 #include "wl_shade.h"
@@ -29,19 +27,23 @@ boolean madenoise;              // true when shooting or screaming
 exit_t playstate;
 
 static musicnames lastmusicchunk = (musicnames) 0;
-
 //static int DebugOk;
 
 objtype objlist[MAXACTORS];
 objtype *newobj, *obj, *player, *lastobj, *objfreelist, *killerobj;
 
-boolean /*noclip,*/ ammocheat;
+/*boolean noclip, ammocheat;*/
 int godmode;//, singlestep, extravbls = 1; // to remove flicker (gray stuff at the bottom)
 
 byte tilemap[MAPSIZE][MAPSIZE]; // wall values only
 byte spotvis[MAPSIZE][MAPSIZE];
+#ifdef EMBEDDED
+int	    actorat[MAPSIZE][MAPSIZE];
+unsigned	farmapylookup[MAPSIZE];
+mapbitmap		objactor;
+#else
 objtype *actorat[MAPSIZE][MAPSIZE];
-
+#endif
 //
 // replacing refresh manager
 //
@@ -73,7 +75,7 @@ boolean buttonheld[NUMBUTTONS];
 
 boolean demoplayback;
 int8_t *demoptr, *lastdemoptr;
-memptr demobuffer;
+//memptr demobuffer;
 
 //
 // current user input
@@ -85,7 +87,9 @@ int lastgamemusicoffset = 0;
 #ifdef USE_SPRITES
 extern unsigned int position_vram;
 extern unsigned int static_items;
-extern unsigned char wall_buffer[];
+extern unsigned char wall_buffer[(SATURN_WIDTH+64)*64];
+extern SPRITE user_walls[SATURN_WIDTH];
+extern char texture_list[SPR_NULLSPRITE];
 #endif
 //===========================================================================
 
@@ -108,7 +112,7 @@ void PlayLoop (void);
 */
 
 
-objtype dummyobj;
+//objtype dummyobj;
 
 //
 // LIST OF SONGS FOR EACH VERSION
@@ -259,7 +263,7 @@ int songs[] = {
 
 void PollKeyboardButtons (void)
 {
-    int i;
+   unsigned int i;
 
     for (i = 0; i < NUMBUTTONS; i++)
         if (Keyboard[buttonscan[i]])
@@ -385,7 +389,6 @@ void PollControls (void)
 }
 
 
-
 //==========================================================================
 
 
@@ -396,6 +399,7 @@ void PollControls (void)
 //              middle of the screen
 //
 ///////////////////////////////////////////////////////////////////////////
+/*
 #define MAXX    320
 #define MAXY    160
 
@@ -403,7 +407,7 @@ void CenterWindow (word w, word h)
 {
     US_DrawWindow (((MAXX / 8) - w) / 2, ((MAXY / 8) - h) / 2, w, h);
 }
-
+*/
 //===========================================================================
 
 
@@ -452,7 +456,7 @@ void CheckKeys (void)
     }
 #endif
 
-
+/*
     //
     // SECRET CHEAT CODE: 'MLI'
     //
@@ -484,7 +488,7 @@ void CheckKeys (void)
         if (viewsize < 17)
             DrawPlayBorder ();
     }
-
+*/
     //
     // OPEN UP DEBUG KEYS
     //
@@ -504,7 +508,7 @@ void CheckKeys (void)
         DebugOk = 1;
     }
 #endif
-
+/*
     //
     // TRYING THE KEEN CHEAT CODE!
     //
@@ -525,27 +529,29 @@ void CheckKeys (void)
         if (viewsize < 18)
             DrawPlayBorder ();
     }
-
+*/
 //
 // pause key weirdness can't be checked as a scan code
 //
-    if(buttonstate[bt_pause]) Paused = true;
+/*    if(buttonstate[bt_pause]) Paused = true;
     if(Paused)
     {
         int lastoffs = StopMusic();
         LatchDrawPic (20 - 4, 80 - 2 * 8, PAUSEDPIC);
+#ifndef USE_SPRITES		
         VH_UpdateScreen();
+#endif		
         IN_Ack ();
         Paused = false;
         ContinueMusic(lastoffs);
         lasttimecount = GetTimeCount();
         return;
     }
-
+*/
 //
 // F1-F7/ESC to enter control panel
 //
-    if (
+/*    if (
 #ifndef DEBCHECK
            scan == sc_F10 ||
 #endif
@@ -563,8 +569,9 @@ void CheckKeys (void)
         IN_ClearKeysDown ();
         return;
     }
-
-    if ((scan >= sc_F1 && scan <= sc_F9) || scan == sc_Escape || buttonstate[bt_esc])
+*/
+//    if ((scan >= sc_F1 && scan <= sc_F9) || scan == sc_Escape || buttonstate[bt_esc])
+    if (scan == sc_Escape)
     {
         int lastoffs = StopMusic ();
         
@@ -576,7 +583,10 @@ void CheckKeys (void)
         IN_ClearKeysDown ();
         VW_FadeOut();
         if(viewsize != 21)
+		{
             DrawPlayScreen ();
+			DrawStatusBar();
+		}
         if (!startgame)
             ContinueMusic (lastoffs);
 //        if (loadedgame)
@@ -584,7 +594,7 @@ void CheckKeys (void)
         lasttimecount = GetTimeCount();
         return;
     }
-
+/*
 //
 // TAB-? debug keys
 //
@@ -600,6 +610,7 @@ void CheckKeys (void)
         return;
     }
 #endif
+*/
 }
 
 
@@ -638,7 +649,7 @@ next element.
 =========================
 */
 
-int objcount;
+//int objcount;
 
 void InitActorList (void)
 {
@@ -658,7 +669,7 @@ void InitActorList (void)
     objfreelist = &objlist[0];
     lastobj = NULL;
 
-    objcount = 0;
+//    objcount = 0;
 
 //
 // give the player the first free spots
@@ -700,7 +711,7 @@ void GetNewActor (void)
     newobj->active = ac_no;
     lastobj = newobj;
 
-    objcount++;
+//    objcount++;
 }
 
 //===========================================================================
@@ -742,7 +753,7 @@ void RemoveObj (objtype * gone)
     gone->prev = objfreelist;
     objfreelist = gone;
 
-    objcount--;
+//    objcount--;
 }
 
 /*
@@ -841,19 +852,20 @@ void InitRedShifts (void)
 //
 // fade through intermediate frames
 //
+
     for (i = 1; i <= NUMREDSHIFTS; i++)
     {
         workptr = redshifts[i - 1];
-        baseptr = gamepal;
+        baseptr = &gamepal[0];
 
         for (j = 0; j <= 255; j++)
         {
             delta = 256 - baseptr->r;
-            workptr->r = baseptr->r + delta * i / REDSTEPS;
+            workptr->r = (baseptr->r + delta * i / REDSTEPS);
             delta = -baseptr->g;
-            workptr->g = baseptr->g + delta * i / REDSTEPS;
+            workptr->g = (baseptr->g + delta * i / REDSTEPS);
             delta = -baseptr->b;
-            workptr->b = baseptr->b + delta * i / REDSTEPS;
+            workptr->b = (baseptr->b + delta * i / REDSTEPS);
             baseptr++;
             workptr++;
         }
@@ -862,20 +874,21 @@ void InitRedShifts (void)
     for (i = 1; i <= NUMWHITESHIFTS; i++)
     {
         workptr = whiteshifts[i - 1];
-        baseptr = gamepal;
+        baseptr = &gamepal[0];
 
         for (j = 0; j <= 255; j++)
         {
             delta = 256 - baseptr->r;
-            workptr->r = baseptr->r + delta * i / WHITESTEPS;
+            workptr->r = (baseptr->r + delta * i / WHITESTEPS);
             delta = 248 - baseptr->g;
-            workptr->g = baseptr->g + delta * i / WHITESTEPS;
+            workptr->g = (baseptr->g + delta * i / WHITESTEPS);
             delta = 0-baseptr->b;
-            workptr->b = baseptr->b + delta * i / WHITESTEPS;
+            workptr->b = (baseptr->b + delta * i / WHITESTEPS);
             baseptr++;
             workptr++;
         }
     }
+	
 }
 
 
@@ -1006,7 +1019,120 @@ void FinishPaletteShifts (void)
 =============================================================================
 */
 
+#ifdef EMBEDDED
+/*
+=====================
+=
+= DoActor
+=
+=====================
+*/
 
+static void DoActor(objtype *ob)
+{
+	void (*think)(objtype *);
+
+	if (!ob->active && !areabyplayer[ob->areanumber])
+		return;
+
+//	if (!(ob->flags & (FL_NONMARK|FL_NEVERMARK)))
+//		actorat[ob->tilex][ob->tiley] = 0;
+
+//	if (!ob->active && !getareabyplayer(ob->areanumber))
+//		return;
+
+	if (!(ob->flags & (FL_NONMARK|FL_NEVERMARK)))
+		clear_actor(ob->tilex, ob->tiley);
+
+//
+// non transitional object
+//
+
+	if (!ob->ticcount)
+	{
+		think =	(void (*)(objtype *)) gamestates[ob->state].think;
+		if (think)
+		{
+			think(ob);
+			if (ob->state == s_none)
+			{
+				RemoveObj (ob);
+				return;
+			}
+		}
+
+		if (ob->flags&FL_NEVERMARK)
+			return;
+
+		if ((ob->flags&FL_NONMARK) && actorat[ob->tilex][ob->tiley])
+			return;
+
+//		actorat[ob->tilex][ob->tiley] = ob->id | 0x8000;
+//        actorat[ob->tilex][ob->tiley] = ob;
+		move_actor(ob);
+		return;
+	}
+
+//
+// transitional object
+//
+	ob->ticcount-=tics;
+	while (ob->ticcount <= 0)
+	{
+		think = (void (*)(objtype *)) gamestates[ob->state].action;	// end of state action
+		if (think)
+		{
+			think(ob);
+			if (ob->state == s_none)
+			{
+				RemoveObj(ob);
+				return;
+			}
+		}
+
+		ob->state = (int)gamestates[ob->state].next;
+
+		if (ob->state == s_none)
+		{
+			RemoveObj(ob);
+			return;
+		}
+
+		if (!gamestates[ob->state].tictime)
+		{
+			ob->ticcount = 0;
+			goto think;
+		}
+
+		ob->ticcount += gamestates[ob->state].tictime;
+	}
+
+think:
+	//
+	// think
+	//
+	think =	(void (*)(objtype *)) gamestates[ob->state].think;
+	if (think)
+	{
+		think(ob);
+		if (ob->state == s_none)
+		{
+			RemoveObj(ob);
+			return;
+		}
+	}
+
+	if (ob->flags&FL_NEVERMARK)
+		return;
+
+	if ((ob->flags&FL_NONMARK) && actorat[ob->tilex][ob->tiley])
+		return;
+
+//	actorat[ob->tilex][ob->tiley] = ob->id | 0x8000;
+	move_actor(ob);
+}
+
+#else
 /*
 =====================
 =
@@ -1109,7 +1235,7 @@ think:
 
     actorat[ob->tilex][ob->tiley] = ob;
 }
-
+#endif
 //==========================================================================
 
 
@@ -1142,8 +1268,12 @@ void PlayLoop (void)
     funnyticount = 0;
     memset (buttonstate, 0, sizeof (buttonstate));
     ClearPaletteShifts ();
-    if (demoplayback)
+
+	if (demoplayback)
         IN_StartAck ();
+	UpdatePaletteShifts ();
+	
+	DrawStatusBar(); // vbt : ajout
 
     do
     {
@@ -1155,7 +1285,7 @@ void PlayLoop (void)
         madenoise = false;
 
         MoveDoors ();
-        MovePWalls ();
+       MovePWalls ();
 
         for (obj = player; obj; obj = obj->next)
             DoActor (obj);
@@ -1206,35 +1336,12 @@ void PlayLoop (void)
                 playstate = ex_abort;
             }
         }
-//
 
-//		memcpyl((void *)(SpriteVRAM + cgaddress),(void *)wall_buffer,(SATURN_WIDTH * 64) );
-extern int frame_x,frame_y;
-	frame_x++;
-//if(frame_y+1>=60)
-#ifdef USE_SPRITES
-	extern int vbt;
-	extern SPRITE user_walls[];
-	SPRITE *user_wall = user_walls;
-
-	for(int pixx=0;pixx<viewwidth;pixx++)
-    {
-		slSetSprite(user_wall, toFIXED(0+(SATURN_SORT_VALUE-user_wall->YC)));	// à remettre
-		user_wall++;
-		vbt++;
-	}
-#endif		
-
-	slSynch(); // vbt ajout 26/05 à remettre // utile ingame !!
-
-#ifdef USE_SPRITES		
-		slDMACopy((void *)wall_buffer,(void *)(SpriteVRAM + cgaddress),(SATURN_WIDTH * 64) );
-		position_vram = SATURN_WIDTH*32+static_items*0x800;
-#endif
-		
+		extern int frame_x,frame_y;
+		frame_x++;
     }
     while (!playstate && !startgame);
-
+//slPrint("end play loop",slLocate(1,20));
     if (playstate != ex_died)
         FinishPaletteShifts ();
 }

@@ -1,9 +1,8 @@
 // WL_GAME.C
-//#define USE_SPRITES 1
+#define USE_SPRITES 1
 #include <math.h>
 #include "wl_def.h"
 //#include <SDL_mixer.h>
-#pragma hdrstop
 
 #ifdef MYPROFILE
 #include <TIME.H>
@@ -12,9 +11,19 @@ extern "C"{
 //extern fixed slAtan(fixed y, fixed x);
 extern fixed MTH_Atan(fixed y, fixed x);
 }
+short atan2fix(fixed x, fixed y);
+
 #ifdef USE_SPRITES
-unsigned int position_vram=SATURN_WIDTH*32;
-unsigned int static_items=0;
+unsigned int position_vram=((SATURN_WIDTH+64)*32);
+//unsigned int static_items=0;
+extern unsigned char wall_buffer[(SATURN_WIDTH+64)*64];
+extern TEXTURE tex_spr[SPR_NULLSPRITE+SATURN_WIDTH];
+unsigned char texture_list[SPR_NULLSPRITE];
+#endif
+
+#ifdef EMBEDDED
+//boolean loadedgame;
+extern boolean startgame;
 #endif
 
 #undef atan2
@@ -69,64 +78,6 @@ void GameLoop (void);
 =============================================================================
 */
 
-#ifdef USE_SPRITES
-TEXTURE tex_spr[SPR_TOTAL+SATURN_WIDTH];
-
-void set_sprite(PICTURE *pcptr)
-{
-	TEXTURE *txptr = &tex_spr[pcptr->texno];
-	slDMACopy((void *)pcptr->pcsrc,
-		(void *)(SpriteVRAM + ((txptr->CGadr) << 3)),
-		(Uint32)((txptr->Hsize * txptr->Vsize * 4) >> (pcptr->cmode)));
-		
-//	memcpy((void *)(SpriteVRAM + ((txptr->CGadr) << 3)),(void *)pcptr->pcsrc,(Uint32)((txptr->Hsize * txptr->Vsize * 4) >> (pcptr->cmode)));
-}
-void loadActorTexture(int texture)
-{
-	extern TEXTURE tex_spr[];
-	byte bmpbuff[64*64];
-	PICTURE pic_spr;
-	t_compshape   *shape = (t_compshape   *)PM_GetSprite(texture);
-	
-	unsigned short  *cmdptr, *sprdata;
-	// set the texel index to the first texel
-	unsigned char  *sprptr = (unsigned char  *)shape+(((((shape->rightpix)-(shape->leftpix))+1)*2)+4);
-	// clear the buffers
-	memset(bmpbuff,0,64*64);
-	// setup a pointer to the column offsets	
-	cmdptr = shape->dataofs;
-
-	for (int x = (shape->leftpix); x <= (shape->rightpix); x++)
-	{
-		sprdata = (unsigned short *)((unsigned char  *)shape+*cmdptr);
-
-		while (SWAP_BYTES_16(*sprdata) != 0)
-		{
-			for (int y = SWAP_BYTES_16(sprdata[2])/2; y < SWAP_BYTES_16(*sprdata)/2; y++)
-			{
-				bmpbuff[(y<<6)+x] = *sprptr++;
-				if(bmpbuff[(y<<6)+x]==0) bmpbuff[(y<<6)+x]=0xa0;
-			}
-			sprdata += 3;
-		}
-		cmdptr++;
-	}
-
-	pic_spr.texno = SATURN_WIDTH+texture;
-	pic_spr.cmode = COL_256;
-	pic_spr.pcsrc = &bmpbuff[0];
-	tex_spr[SATURN_WIDTH+texture] = TEXDEF(64, 64, position_vram);
-	set_sprite(&pic_spr);					
-	position_vram+=0x800;	
-	
-//char toto[100];
-//sprintf(toto,"%d x%d x%d y%d y%d           ",texture, shape->leftpix,shape->rightpix,((SWAP_BYTES_16(sprdata[2]))/2),(SWAP_BYTES_16(*sprdata)/2));
-//sprintf(toto,"%04d %02d t %d y%d y%d",position_vram*2,position_vram/0x800,SATURN_WIDTH+texture,((SWAP_BYTES_16(sprdata[2]))/2),(SWAP_BYTES_16(*sprdata)/2));
-//sprintf(toto,"%06d %06d t %d %d %d",shape->leftpix,shape->rightpix,SATURN_WIDTH+texture,(SWAP_BYTES_16(sprdata[2]))/2,(SWAP_BYTES_16(*sprdata)/2));
-
-//slPrint(toto,slLocate(1,5));	
-}
-#endif
 /*
 ==========================
 =
@@ -229,7 +180,7 @@ static void ScanInfoPlane(void)
 // P wall
 //
                 case 98:
-                ////    if (!loadedgame)
+                    //if (!loadedgame)
                         gamestate.secrettotal++;
                     break;
 
@@ -533,26 +484,6 @@ static void ScanInfoPlane(void)
             }
         }
     }
-// on charge les statics :
-	unsigned char sprite_list[SPR_STAT_47+1];
-	memset(sprite_list,0,SPR_STAT_47+1);
-	
-	statobj_t *statptr;
-#ifdef USE_SPRITES
-	static_items=0;
-	
-    for (statptr = &statobjlist[0] ; statptr !=laststatobj ; statptr++)
-    {
-		unsigned char texture = statptr->shapenum;
-
-		if(sprite_list[texture]==0)
-		{
-			loadActorTexture(texture);
-			sprite_list[texture]=1;
-			static_items++;
-		}
-	}
-#endif	
 }
 
 //==========================================================================
@@ -571,9 +502,10 @@ void SetupGameLevel (void)
     int  x,y;
     word *map;
     word tile;
-slIntFunction(VblIn) ;
 
-//    if (!loadedgame)
+	slIntFunction(VblIn) ;
+
+    //if (!loadedgame)
     {
         gamestate.TimeCount
             = gamestate.secrettotal
@@ -591,13 +523,11 @@ slIntFunction(VblIn) ;
         US_InitRndT (false);
     else
         US_InitRndT (true);
-
 //
 // load the level
 //
     CA_CacheMap (gamestate.mapon+10*gamestate.episode);
     mapon-=gamestate.episode*10;
-
 #ifdef USE_FEATUREFLAGS
     // Temporary definition to make things clearer
     #define MXX MAPSIZE - 1
@@ -610,12 +540,12 @@ slIntFunction(VblIn) ;
 
     #undef MXX
 #endif
-
 //
 // copy the wall data to a data segment array
 //
     memset (tilemap,0,sizeof(tilemap));
     memset (actorat,0,sizeof(actorat));
+	
     map = mapsegs[0];
     for (y=0;y<mapheight;y++)
     {
@@ -626,7 +556,12 @@ slIntFunction(VblIn) ;
             {
                 // solid wall
                 tilemap[x][y] = (byte) tile;
+#ifdef EMBEDDED
+//				actorat[x][y] = tile;
+				set_wall_at(x, y, tile);
+#else
                 actorat[x][y] = (objtype *)(uintptr_t) tile;
+#endif				
             }
             else
             {
@@ -636,14 +571,13 @@ slIntFunction(VblIn) ;
             }
         }
     }
-
 //
 // spawn doors
 //
     InitActorList ();                       // start spawning things with a clean slate
     InitDoorList ();
     InitStaticList ();
-	
+
     map = mapsegs[0];
     for (y=0;y<mapheight;y++)
     {
@@ -678,7 +612,8 @@ slIntFunction(VblIn) ;
     }
 // vbt : on recharge la vram
 #ifdef USE_SPRITES
-	position_vram=SATURN_WIDTH*32;
+	memset(texture_list,0xff,SPR_NULLSPRITE);
+	position_vram=(SATURN_WIDTH+64)*32;
 
 	if(viewheight == screenHeight)
 		VL_ClearScreen(0);	
@@ -701,8 +636,10 @@ slIntFunction(VblIn) ;
             if (tile == AMBUSHTILE)
             {
                 tilemap[x][y] = 0;
-                if ( (unsigned)(uintptr_t)actorat[x][y] == AMBUSHTILE)
-                    actorat[x][y] = NULL;
+//                if ( (unsigned)(uintptr_t)actorat[x][y] == AMBUSHTILE)
+//                    actorat[x][y] = NULL;
+				if (get_actor_at(x, y) == AMBUSHTILE)
+					clear_actor(x, y);
 
                 if (*map >= AREATILE)
                     tile = *map;
@@ -717,7 +654,12 @@ slIntFunction(VblIn) ;
             }
         }
     }
-	slScrTransparent(NBG1OFF);
+	//VGAClearScreen ();
+//	slPrint("slScrTransparent1",slLocate(1,17));	
+	slScrTransparent(0);
+	slSynch();
+	extern const void * TransList;
+	memset((void *)TransList,0x00,0xf0*4*3);	
 }
 
 
@@ -762,9 +704,9 @@ void DrawPlayBorderSides(void)
     if(xl != 0)
     {
         // Paint game view border lines
-	    VWB_BarScaledCoord(xl - px, yl - px, vw + px, px,          0);                      // upper border
+	    VWB_BarScaledCoord(xl - px, yl - px, vw + px, px,          160);                      // upper border
 	    VWB_BarScaledCoord(xl,      yl + vh, vw + px, px,          bordercol - 2);          // lower border
-	    VWB_BarScaledCoord(xl - px, yl - px, px,      vh + px,     0);                      // left border
+	    VWB_BarScaledCoord(xl - px, yl - px, px,      vh + px,     160);                      // left border
 	    VWB_BarScaledCoord(xl + vw, yl - px, px,      vh + px * 2, bordercol - 2);          // right border
 	    VWB_BarScaledCoord(xl - px, yl + vh, px,      px,          bordercol - 3);          // lower left highlight
     }
@@ -786,7 +728,7 @@ void DrawPlayBorderSides(void)
 
 void DrawStatusBorder (byte color)
 {
-    int statusborderw = (screenWidth-scaleFactor*320)/2;
+    int statusborderw = (screenWidth-scaleFactor*SATURN_WIDTH)/2;
 
     VWB_BarScaledCoord (0,0,screenWidth,screenHeight-scaleFactor*(STATUSLINES-3),color);
     VWB_BarScaledCoord (0,screenHeight-scaleFactor*(STATUSLINES-3),
@@ -824,11 +766,18 @@ void DrawPlayBorder (void)
         DrawStatusBorder(bordercol);
     else
     {
-        const int statusborderw = (screenWidth-px*320)/2;
+        const int statusborderw = (screenWidth-px*SATURN_WIDTH)/2;
+#if SATURN_WIDTH==352		
+        VWB_BarScaledCoord (0, screenHeight-px*STATUSLINES,
+            8+statusborderw+px*8, px*STATUSLINES, bordercol);
+        VWB_BarScaledCoord (screenWidth-8-statusborderw-px*8, screenHeight-px*STATUSLINES,
+            8+statusborderw+px*8, px*STATUSLINES, bordercol);
+#else
         VWB_BarScaledCoord (0, screenHeight-px*STATUSLINES,
             statusborderw+px*8, px*STATUSLINES, bordercol);
         VWB_BarScaledCoord (screenWidth-statusborderw-px*8, screenHeight-px*STATUSLINES,
             statusborderw+px*8, px*STATUSLINES, bordercol);
+#endif
     }
 
     VWB_BarScaledCoord (0,0,screenWidth,screenHeight-px*STATUSLINES,bordercol);
@@ -838,6 +787,7 @@ void DrawPlayBorder (void)
     VWB_BarScaledCoord (xl,yl,viewwidth,viewheight,0);
 
     if(xl != 0)
+//    if(viewsize == 19)
     {
 		SPRITE *sys_clip = (SPRITE *) SpriteVRAM;
 		(*sys_clip).XC = (xl+viewwidth)-1;
@@ -849,9 +799,9 @@ void DrawPlayBorder (void)
 //xl-px=15
 //yl=9
         // Paint game view border lines
-        VWB_BarScaledCoord(xl-px, yl-px, viewwidth+px, px, 0);                      // upper border
+        VWB_BarScaledCoord(xl-px, yl-px, viewwidth+px, px, 160);                      // upper border
         VWB_BarScaledCoord(xl, yl+viewheight, viewwidth+px, px, bordercol-2);       // lower border
-        VWB_BarScaledCoord(xl-px, yl-px, px, viewheight+px, 0);                     // left border
+        VWB_BarScaledCoord(xl-px, yl-px, px, viewheight+px, 160);                     // left border
         VWB_BarScaledCoord(xl+viewwidth, yl-px, px, viewheight+2*px, bordercol-2);  // right border
         VWB_BarScaledCoord(xl-px, yl+viewheight, px, px, bordercol-3);              // lower left highlight
     }
@@ -865,6 +815,7 @@ void DrawPlayBorder (void)
         // Just paint a lower border line
         VWB_BarScaledCoord(0, yl+viewheight, viewwidth, px, bordercol-2);       // lower border
     }
+
 }
 
 
@@ -880,27 +831,32 @@ void DrawPlayScreen (void)
 {
 	//vbt à remettre
   	//		slPrint("VWB_DrawPicScaledCoord",slLocate(10,10));
-			VWB_DrawPicScaledCoord ((screenWidth-scaleFactor*320)/2,screenHeight-scaleFactor*STATUSLINES,STATUSBARPIC);
+#if SATURN_WIDTH == 352
+	VWB_DrawPicScaledCoord (16+(screenWidth-scaleFactor*SATURN_WIDTH)/2,screenHeight-scaleFactor*STATUSLINES,STATUSBARPIC);
+#else
+	VWB_DrawPicScaledCoord ((screenWidth-scaleFactor*SATURN_WIDTH)/2,screenHeight-scaleFactor*STATUSLINES,STATUSBARPIC);
+#endif	
   	//		slPrint("DrawPlayBorder",slLocate(10,11));
     DrawPlayBorder ();
-  	//		slPrint("DrawFace",slLocate(10,12));
-    DrawFace ();
-  	//		slPrint("DrawHealth",slLocate(10,13));
-    DrawHealth ();
-  	//		slPrint("DrawLives",slLocate(10,14));
-    DrawLives ();
-  	//		slPrint("DrawLevel",slLocate(10,15));
-    DrawLevel ();
-  	//		slPrint("DrawAmmo",slLocate(10,16));
-    DrawAmmo ();
-  	//		slPrint("DrawKeys",slLocate(10,17));
-    DrawKeys ();
-  	//		slPrint("DrawWeapon",slLocate(10,18));
- //   DrawWeapon ();
-  	//		slPrint("DrawScore",slLocate(10,19));
-    DrawScore ();
-  	//		slPrint("DrawScore",slLocate(10,30));
 }
+
+void DrawStatusBar (void)
+{
+	//vbt à remettre
+  	//		slPrint("VWB_DrawPicScaledCoord",slLocate(10,10));
+//			VWB_DrawPicScaledCoord ((screenWidth-scaleFactor*SATURN_WIDTH)/2,screenHeight-scaleFactor*STATUSLINES,STATUSBARPIC);
+  	//		slPrint("DrawPlayBorder",slLocate(10,11));
+//    DrawPlayBorder ();
+    DrawFace ();
+    DrawHealth ();
+    DrawLives ();
+    DrawLevel ();
+    DrawAmmo ();
+    DrawKeys ();
+    DrawWeapon ();
+    DrawScore ();
+}
+
 /*
 // Uses LatchDrawPic instead of StatusDrawPic
 void LatchNumberHERE (int x, int y, unsigned width, int32_t number)
@@ -928,7 +884,7 @@ void LatchNumberHERE (int x, int y, unsigned width, int32_t number)
         c++;
     }
 }
-*/
+
 void ShowActStatus()
 {
     // Draw status bar without borders
@@ -936,7 +892,7 @@ void ShowActStatus()
     int	picnum = STATUSBARPIC - STARTPICS;
     int width = pictable[picnum].width;
     int height = pictable[picnum].height;
-    int destx = (screenWidth-scaleFactor*320)/2 + 9 * scaleFactor;
+    int destx = (screenWidth-scaleFactor*SATURN_WIDTH)/2 + 9 * scaleFactor;
     int desty = screenHeight - (height - 4) * scaleFactor;
     VL_MemToScreenScaledCoord(source, width, height, 9, 4, destx, desty, width - 18, height - 7);
 
@@ -947,11 +903,11 @@ void ShowActStatus()
     DrawLevel ();
     DrawAmmo ();
     DrawKeys ();
-    DrawWeapon ();
+//    DrawWeapon ();
     DrawScore ();
     ingame = true;
 }
-
+*/
 /*
 ==================
 =
@@ -997,7 +953,6 @@ void PlayDemo (int demonumber)
 
     startgame = false;
     demoplayback = true;
-
     SetupGameLevel ();
     StartMusic ();
 
@@ -1029,8 +984,6 @@ void PlayDemo (int demonumber)
 
 void Died (void)
 {
-    float   fangle;
-//    int   fangle;
     int32_t dx,dy;
     int     iangle,curangle,clockwise,counter,change;
 
@@ -1051,14 +1004,7 @@ void Died (void)
         dx = killerobj->x - player->x;
         dy = player->y - killerobj->y;
 
-        fangle = (float) atan2((float) dy, (float) dx);     // returns -pi to pi
-//		fangle = slAtan ((dy<<16), (dx<<16));
-		
-        if (fangle<0)
-            fangle = (float) (M_PI*2+fangle);
-//            fangle = (int) (M_PI*2+fangle);
-
-        iangle = (int) (fangle/(M_PI*2)*ANGLES);
+		iangle = atan2fix(dy,dx);
     }
     else
     {
@@ -1076,7 +1022,6 @@ void Died (void)
         clockwise = iangle - player->angle;
         counter = player->angle + ANGLES-iangle;
     }
-
     curangle = player->angle;
 
     if (clockwise<counter)
@@ -1089,6 +1034,7 @@ void Died (void)
         do
         {
             change = tics*DEATHROTATE;
+
             if (curangle + change > iangle)
                 change = iangle-curangle;
 
@@ -1111,6 +1057,7 @@ void Died (void)
         do
         {
             change = -(int)tics*DEATHROTATE;
+
             if (curangle + change < iangle)
                 change = iangle-curangle;
 
@@ -1129,15 +1076,17 @@ void Died (void)
     //
     FinishPaletteShifts ();
 
-    VL_BarScaledCoord (viewscreenx,viewscreeny,viewwidth,viewheight,4);
-
     IN_ClearKeysDown ();
 
-    FizzleFade(screenBuffer,screen,viewscreenx,viewscreeny,viewwidth,viewheight,70,false);
-
+    FizzleFade(screenBuffer,screen,viewscreenx,viewscreeny,viewwidth,viewheight,70,false); // died !!!
+	
     IN_UserInput(100);
     SD_WaitSoundDone ();
-
+	
+//    VL_UnlockSurface(curSurface);
+//	VGAClearScreen(); // vbt : maj du fond d'écran
+//    VL_UnlockSurface(curSurface);
+	
     gamestate.lives--;
 
     if (gamestate.lives > -1)
@@ -1154,7 +1103,8 @@ void Died (void)
         if(viewsize != 21)
         {
             DrawKeys ();
-            DrawWeapon ();
+			if(gamestate.weapon!=-1)
+				DrawWeapon ();
             DrawAmmo ();
             DrawHealth ();
             DrawFace ();
@@ -1177,12 +1127,13 @@ void heapWalk();
 void GameLoop (void)
 {
 // vbt dernier niveau
+//gamestate.mapon = 1;	
 //gamestate.mapon = 8;	
-GiveWeapon (gamestate.bestweapon+2);
+//GiveWeapon (gamestate.bestweapon+2);
 gamestate.ammo = 99;	
 gamestate.keys = 3;
 // vbt dernier niveau
-		   
+		
     boolean died;
 #ifdef MYPROFILE
     clock_t start,end;
@@ -1198,16 +1149,15 @@ restartgame:
     died = false;
     do
     {
-    //    if (!loadedgame)
+        //if (!loadedgame)
             gamestate.score = gamestate.oldscore;
         if(!died || viewsize != 21) 
 		{
   			//slPrint("DrawScore",slLocate(10,9));
 			DrawScore();
 		}
-
         startgame = false;
-    //    if (!loadedgame)
+        //if (!loadedgame)
 		{
 			//slPrint("SetupGameLevel",slLocate(10,10));
             SetupGameLevel ();
@@ -1219,7 +1169,6 @@ restartgame:
             DrawKeys ();
         }
 #endif
-
         ingame = true;
 /*        if(loadedgame)
         {
@@ -1228,16 +1177,16 @@ restartgame:
         }
         else*/ StartMusic ();
 
-//        if (!died)
-//            PreloadGraphics ();             // TODO: Let this do something useful!
-//        else
-		  if(died)
+        if (!died)
+            PreloadGraphics ();             // TODO: Let this do something useful!
+        else
+        {
             died = false;
-
-        fizzlein = true;
+            fizzlein = true;
+        }
 
         DrawLevel ();
-
+	
 #ifdef SPEAR
 startplayloop:
 #endif

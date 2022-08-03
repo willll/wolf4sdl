@@ -6,11 +6,11 @@
 extern "C" {
 //#endif
 	   
-#include "C:/SaturnOrbit/SGL_302j/inc/sgl.h"
+#include "sgl.h"
 
-#include "C:/SaturnOrbit/SGL_302j/inc/sega_sys.h"
-#include "C:/SaturnOrbit/SGL_302j/inc/sega_gfs.h"
-#include "C:/SaturnOrbit/SGL_302j/inc/sega_tim.h"
+#include "sega_sys.h"
+#include "sega_gfs.h"
+#include "sega_tim.h"
 //#ifdef __cplusplus
 }
 //#endif
@@ -58,10 +58,12 @@ extern "C" {
 
 
 //#define  ACTION_REPLAY
- 
+
+
+
 #ifndef ACTION_REPLAY
-#define MAX_OPEN        20 //a ne pas modifier
-#define MAX_DIR         64//384
+#define MAX_OPEN        24 //a ne pas modifier
+#define MAX_DIR         128//384
 #else
 #define MAX_OPEN        2
 #define MAX_DIR         1
@@ -198,9 +200,9 @@ typedef struct {
 			Uint16 sym;
 		} keysym;
 	} key;
-	struct {
+/*	struct {
 		Uint16 x,y;
-	} button;
+	} button;*/
 } SDL_Event;
 
 typedef struct {
@@ -211,18 +213,21 @@ typedef struct {
 	Uint8 r;
 	Uint8 g;
 	Uint8 b;
-	Uint8 unused;
+//	Uint8 unused;
 } SDL_Color;
 
+//typedef Uint16 SDL_Color;
+
 typedef struct {
-	int       ncolors;
+//	int       ncolors;
 	SDL_Color *colors;
 } SDL_Palette;
 
 /* Everything in the pixel format structure is read-only */
 typedef struct SDL_PixelFormat {
-	SDL_Palette *palette;
 	Uint8  BitsPerPixel;
+#if 0	
+	SDL_Palette *palette;	
 	Uint8  BytesPerPixel;
 	Uint8  Rloss;
 	Uint8  Gloss;
@@ -241,56 +246,60 @@ typedef struct SDL_PixelFormat {
 	Uint32 colorkey;
 	/* Alpha value information (per-surface alpha) */
 	Uint8  alpha;
+#endif	
 } SDL_PixelFormat;
+
 /*
 extern SDL_Screen *screen;
  */
 typedef struct SDL_Surface {
-	Uint32 flags;				/* Read-only */
-	SDL_PixelFormat *format;		/* Read-only */
-	int w, h;				/* Read-only */
+//	Uint32 flags;				/* Read-only */
+//	SDL_PixelFormat *format;		/* Read-only */
+	unsigned int w, h;				/* Read-only */
 	Uint16 pitch;				/* Read-only */
 	void *pixels;				/* Read-write */
-	int offset;				/* Private */
+//	int offset;				/* Private */
 
 	/* Hardware-specific surface info */
 	//struct private_hwdata *hwdata;
 
 	/* clipping information */
-	SDL_Rect clip_rect;			/* Read-only */
+//	SDL_Rect clip_rect;			/* Read-only */
 	//Uint32 unused1;				/* for binary compatibility */
 
 	/* Allow recursive locks */
-	Uint32 locked;				/* Private */
+//	Uint32 locked;				/* Private */
 
 	/* info for fast blit mapping to other surfaces */
-	struct SDL_BlitMap *map;		/* Private */
+//	struct SDL_BlitMap *map;		/* Private */
 
 	/* format version, bumped at every change to invalidate blit maps */
-	unsigned int format_version;		/* Private */
+//	unsigned int format_version;		/* Private */
 
 	/* Reference count -- used when freeing surface */
-	int refcount;				/* Read-mostly */
+//	int refcount;				/* Read-mostly */
 } SDL_Surface;
 
 /* The calculated values in this structure are calculated by SDL_OpenAudio() */
+	
 typedef struct {
 	int freq;		/* DSP frequency -- samples per second */
 	Uint16 format;		/* Audio data format */
 	Uint8  channels;	/* Number of channels: 1 mono, 2 stereo */
-	Uint8  silence;		/* Audio buffer silence value (calculated) */
-	Uint16 samples;		/* Audio buffer size in samples (power of 2) */
-	Uint16 padding;		/* Necessary for some compile environments */
-	Uint32 size;		/* Audio buffer size in bytes (calculated) */
+//	Uint8  silence;		/* Audio buffer silence value (calculated) */
+//	Uint16 samples;		/* Audio buffer size in samples (power of 2) */
+//	Uint16 padding;		/* Necessary for some compile environments */
+//	Uint32 size;		/* Audio buffer size in bytes (calculated) */
 	/* This function is called when the audio device needs more data.
 	   'stream' is a pointer to the audio data buffer
 	   'len' is the length of that buffer in bytes.
 	   Once the callback returns, the buffer will no longer be valid.
 	   Stereo samples are stored in a LRLRLR ordering.
 	*/
-	void (*callback)(void *userdata, Uint8 *stream, int len);
-	void  *userdata;
+//	void (*callback)(void *userdata, Uint8 *stream, int len);
+//	void  *userdata;
 } SDL_AudioSpec;
+
 /*
 struct SDL_mutex;
 typedef struct SDL_mutex SDL_mutex;
@@ -324,10 +333,6 @@ typedef struct {
 //    Uint8 volume;     /* Per-sample volume, 0-128 */
 } Mix_Chunk;
 
-//#define	SDL_Flip(arg)	\
-	//slSynch();
-
-
 #define SDL_RLEACCEL	0x00004000	/* Surface is RLE encoded */
 #define SDL_MUSTLOCK(surface)	\
   (surface->offset ||		\
@@ -337,7 +342,7 @@ typedef struct {
 #define SDL_BlitSurface SDL_UpperBlit
 
 extern int SDL_WaitEvent(SDL_Event *event);
-extern int SDL_PollEvent(SDL_Event *event);
+extern void SDL_PollEvent(int start,int end, SDL_Event *event);
 //extern void SDL_Delay(int delay);
 extern void SDL_WM_SetCaption(const char *title, const char *icon);
 extern const SDL_VideoInfo * SDL_GetVideoInfo(void);
