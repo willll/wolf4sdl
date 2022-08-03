@@ -1,9 +1,7 @@
 //#define USE_SPRITES 1
-extern "C" {
-  #include "wl_def.h"
-}
+#include "wl_def.h"
 #include "sdl/SDL.h"
-#include "sdl/SDL_Mixer.h"
+#include "sdl/SDL_mixer.h"
 #include <stdlib.h>  /* malloc */
 //#include <string.h>  /* memcpy */
 #include <ctype.h>  /* toupper */
@@ -12,7 +10,7 @@ extern "C" {
 extern "C" {
 
 //#include "L:\saturn\dev\sms_elf2\cdc\SEGA_CDC.H"
-#include	"sl_def.h"
+#include	"C:/SaturnOrbit/SGL_302j/INC/sl_def.h"
 //#ifdef VBT
  #include "sega_cdc.h"
  #include "sega_snd.h"
