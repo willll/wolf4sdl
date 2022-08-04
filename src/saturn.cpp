@@ -10,7 +10,7 @@
 extern "C" {
 
 //#include "L:\saturn\dev\sms_elf2\cdc\SEGA_CDC.H"
-#include	"C:/SaturnOrbit/SGL_302j/INC/sl_def.h"
+#include	"sl_def.h"
 //#ifdef VBT
  #include "sega_cdc.h"
  #include "sega_snd.h"
