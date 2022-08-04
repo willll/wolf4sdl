@@ -5,7 +5,7 @@
 //#ifdef __cplusplus
 extern "C" {
 //#endif
-	   
+
 #include "sgl.h"
 
 #include "sega_sys.h"
@@ -37,15 +37,15 @@ extern "C" {
 #define PCM_CALC_OCT(smpling_rate) 											\
 		((Sint32)logtbl[PCM_SCSP_FREQUENCY / ((smpling_rate) + 1)])
 
-/* ƒVƒtƒgŠî€Žü”g”‚ÌŒvŽZ */
+/* ï¿½Vï¿½tï¿½gï¿½î€ï¿½ï¿½ï¿½gï¿½ï¿½ï¿½ÌŒvï¿½Z */
 #define PCM_CALC_SHIFT_FREQ(oct)											\
 		(PCM_SCSP_FREQUENCY >> (oct))
 
-/* ‚e‚m‚r‚ÌŒvŽZ */
+/* ï¿½eï¿½mï¿½rï¿½ÌŒvï¿½Z */
 #define PCM_CALC_FNS(smpling_rate, shift_freq)								\
 		((((smpling_rate) - (shift_freq)) << 10) / (shift_freq))
 
-/* SATURN Sound Driver ƒpƒ‰ƒ[ƒ^Ý’è’l */
+/* SATURN Sound Driver ï¿½pï¿½ï¿½ï¿½ï¿½ï¿½[ï¿½^ï¿½Ý’ï¿½ï¿½l */
 #define PCM_SET_STMNO(para)													\
 		((Uint8)PCM_MSK3((para)->pcm_stream_no))
 #define PCM_SET_LEVEL_PAN(para)												\
@@ -184,7 +184,7 @@ typedef enum {
 
 
 #define MIX_CHANNELS 8
- 
+
 #define SDL_LockMutex(m)	SDL_mutexP(m)
 #define SDL_UnlockMutex(m)	SDL_mutexV(m)
 
@@ -226,8 +226,8 @@ typedef struct {
 /* Everything in the pixel format structure is read-only */
 typedef struct SDL_PixelFormat {
 	Uint8  BitsPerPixel;
-#if 0	
-	SDL_Palette *palette;	
+#if 0
+	SDL_Palette *palette;
 	Uint8  BytesPerPixel;
 	Uint8  Rloss;
 	Uint8  Gloss;
@@ -246,7 +246,7 @@ typedef struct SDL_PixelFormat {
 	Uint32 colorkey;
 	/* Alpha value information (per-surface alpha) */
 	Uint8  alpha;
-#endif	
+#endif
 } SDL_PixelFormat;
 
 /*
@@ -281,7 +281,7 @@ typedef struct SDL_Surface {
 } SDL_Surface;
 
 /* The calculated values in this structure are calculated by SDL_OpenAudio() */
-	
+
 typedef struct {
 	int freq;		/* DSP frequency -- samples per second */
 	Uint16 format;		/* Audio data format */
@@ -308,7 +308,7 @@ typedef struct _SDL_Joystick SDL_Joystick;
 */
 /* Useful for determining the video hardware capabilities */
 typedef struct {
-#if 0	
+#if 0
 	Uint32 hw_available :1;	/* Flag: Can you create hardware surfaces? */
 	Uint32 wm_available :1;	/* Flag: Can you talk to a window manager? */
 	Uint32 UnusedBits1  :6;
@@ -322,7 +322,7 @@ typedef struct {
 	Uint32 blit_fill    :1;	/* Flag: Accelerated color fill */
 	Uint32 UnusedBits3  :16;
 	Uint32 video_mem;	/* The total amount of video memory (in K) */
-#endif	
+#endif
 	SDL_PixelFormat *vfmt;	/* Value: The format of the video surface */
 } SDL_VideoInfo;
 
@@ -474,7 +474,7 @@ extern "C" {
 
 
 
-/* This function loads the SDL dynamically linked library and initializes 
+/* This function loads the SDL dynamically linked library and initializes
  * the subsystems specified by 'flags' (and those satisfying dependencies)
  * Unless the SDL_INIT_NOPARACHUTE flag is set, it will install cleanup
  * signal handlers for some commonly ignored fatal signals (like SIGSEGV)
@@ -504,7 +504,7 @@ extern DECLSPEC void SDLCALL SDL_Quit(void);
 #endif
 #include "close_code.h"
 
-#endif 
+#endif
 /* _SDL_H */
 
 #endif

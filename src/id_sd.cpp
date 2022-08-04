@@ -31,11 +31,11 @@
 //#include <SDL_mixer.h>
 #include "fmopl.h"
 #include <string.h>
-  #include "pcmsys.h"
+#include "pcmsys.h"
 
 #define ORIGSAMPLERATE 7000
 extern int SDL_OpenAudio(SDL_AudioSpec *desired, SDL_AudioSpec *obtained);
-#ifndef PONY	
+#ifndef PONY
 extern PCM m_dat[4];
 static Mix_Chunk *SoundChunks[ STARTMUSIC - STARTDIGISOUNDS];
 #endif
@@ -44,7 +44,7 @@ static Mix_Chunk *SoundChunks[ STARTMUSIC - STARTDIGISOUNDS];
                         SoundBlasterPresent,//SBProPresent,
                         SoundPositioned;
         SDSMode         DigiMode;
-#ifndef USE_ADX			
+#ifndef USE_ADX
         int             DigiMap[LASTSOUND];
 #endif
 
@@ -60,9 +60,9 @@ void SD_PrepareSound(int which)
 	long fileSize;
 	char filename[15];
 	unsigned char *mem_buf;
-#ifndef USE_ADX	
+#ifndef USE_ADX
 	sprintf(filename,"%03d.PCM",which);
-#else	
+#else
 	sprintf(filename,"%03d.ADX",which);
 #endif
  	fileId = GFS_NameToId((Sint8*)filename);
@@ -76,12 +76,12 @@ void SD_PrepareSound(int which)
 //		if(which <23)
 //		if(fileSize>8192 && fileSize<20000)
 		{
-#ifndef USE_ADX				
+#ifndef USE_ADX
 //			load_8bit_pcm((Sint8*)filename, ORIGSAMPLERATE);
 #else
 			load_adx((Sint8*)filename);
-#endif			
-		} 
+#endif
+		}
 	}
 #else
 	if(fileId>0)
@@ -98,25 +98,25 @@ void SD_PrepareSound(int which)
 		{
 			mem_buf = (unsigned char *)lowsound;
 			lowsound += (size_t)fileSize;
-			
+
 			if (lowsound % 4 != 0)
-				lowsound = (lowsound + (4 - 1)) & -4;			
+				lowsound = (lowsound + (4 - 1)) & -4;
 		}
-		
+
 		GFS_Load(fileId, 0, mem_buf, fileSize);
 		SoundChunks[which] = (Mix_Chunk*)malloc(sizeof(Mix_Chunk));
-		
+
 		SoundChunks[which]->abuf = mem_buf;
 		SoundChunks[which]->alen = fileSize;
-		
+
 		if (fileSize<0x900)
-			SoundChunks[which]->alen = 0x900;  
+			SoundChunks[which]->alen = 0x900;
 	}
 	else
 	{
 	   SoundChunks[which]->alen = 0;
 	}
-#endif	
+#endif
 }
 
 
@@ -124,7 +124,7 @@ boolean
 SD_PlaySound(int sound)
 {
 #ifdef PONY
-#ifndef USE_ADX	
+#ifndef USE_ADX
     if(Mix_PlayChannel(DigiMap[sound], NULL, 0) == -1)
 #else
     if(Mix_PlayChannel(sound, NULL, 0) == -1)
@@ -132,7 +132,7 @@ SD_PlaySound(int sound)
 #else
 	Mix_Chunk *sample = SoundChunks[DigiMap[sound]];	 //DigiMap[sound]
     if(Mix_PlayChannel(0, sample, 0) == -1)
-#endif	
+#endif
     {
         return false;
     }
@@ -141,8 +141,8 @@ SD_PlaySound(int sound)
 word
 SD_SoundPlaying(void)
 {
-#ifdef PONY	
-	
+#ifdef PONY
+
 #else
 	unsigned char i;
 	for(i=0;i<4;i++)
@@ -156,7 +156,7 @@ SD_SoundPlaying(void)
 	}
 	////slPrintHex(SoundMode,slLocate(10,3));
 #endif
-	
+
 	return false;
 }
 
@@ -238,17 +238,17 @@ SD_WaitSoundDone(void)
 void
 SD_SetDigiDevice(SDSMode mode)
 {
-	//slPrint("SD_SetDigiDevice empty",slLocate(2,19));	
+	//slPrint("SD_SetDigiDevice empty",slLocate(2,19));
 }
 
 boolean
 SD_SetSoundMode(SDMode mode)
 {
-	//slPrint("SD_SetSoundMode start",slLocate(2,18));	
-	
+	//slPrint("SD_SetSoundMode start",slLocate(2,18));
+
     boolean result = false;
     word    tableoffset;
-	//slPrint("SD_StopSound       ",slLocate(2,18));	
+	//slPrint("SD_StopSound       ",slLocate(2,18));
 
     SD_StopSound();
 
@@ -282,7 +282,7 @@ SD_SetSoundMode(SDMode mode)
         SoundMode = mode;
         //SDL_StartDevice();
     }
-	//slPrint("SD_SetSoundMode end",slLocate(2,18));	
+	//slPrint("SD_SetSoundMode end",slLocate(2,18));
 
     return(result);
 
