@@ -7,9 +7,10 @@
 #endif
 
 #include "wl_def.h"
-#pragma hdrstop
 #include "wl_atmos.h"
 #include "sdl/SDL_syswm.h"
+#include "pcmsys.h"
+#include "C:\vbt\saturn\SBL6\SEGALIB\INCLUDE\sega_per.h"
 
 /*
 =============================================================================
@@ -49,14 +50,11 @@ extern byte signon[];
 */
 
 //char    str[80];
-int     dirangle[9] = {0,ANGLES/8,2*ANGLES/8,3*ANGLES/8,4*ANGLES/8,
-                       5*ANGLES/8,6*ANGLES/8,7*ANGLES/8,ANGLES};
 
 //
 // proejection variables
 //
 fixed    focallength;
-unsigned screenofs;
 int      viewscreenx, viewscreeny;
 int      viewwidth;
 int      viewheight;
@@ -64,7 +62,6 @@ short    centerx;
 int      shootdelta;           // pixels away from centerx a target can be
 fixed    scale;
 int32_t  heightnumerator;
-
 
 void    Quit (const char *error,...);
 
@@ -75,34 +72,50 @@ boolean startgame;
 // Command line parameter variables
 //
 
-boolean param_nowait = true;
+static boolean param_nowait = true;
 int     param_difficulty = 1;           // default is "normal"
-int     param_tedlevel = -1;            // default is not to start a level
+//int     param_tedlevel = -1;            // default is not to start a level
 
 int     param_mission = 1;
 boolean param_goodtimes = false;
-boolean param_ignorenumchunks = false;
+//boolean param_ignorenumchunks = false;
 
 //#ifndef REMDEBUG
 unsigned frame_x=0,frame_y=0;
+unsigned char hz=0;
+extern SDL_Color curpal[256];
+#ifndef EMBEDDED
+extern int min_wallheight;
+#endif
+//extern int nb_unlock;
 
 void VblIn(void);
-extern int vbt;
+
 void VblIn(void)
 {
-	char buffer[8];
-	
+	char buffer[8];/*
+extern Uint8 TransRequest;
+TransRequest*=2;
+extern Uint16 TransCount;
+TransCount*=2;	*/
 	frame_y++;
-				 
-	if(frame_y==60)
+	
+	if(frame_y==hz)
 	{
-		slPrint((char*)"fps                                                   ",slLocate(10,1));
-		slPrint((char*)ltoa(frame_x,buffer,8),slLocate(14,1));
-slPrint((char*)ltoa(vbt,buffer,8),slLocate(22,1));		
+		slPrint((char*)ltoa(frame_x,buffer),slLocate(14,1));
+//		slPrintHex(nb_unlock,slLocate(14,2));		
 		frame_y=frame_x=0;
-		vbt=0;
-	}		   
+//		nb_unlock=0;
+	}
+//	SDL_SetPalette(curSurface, SDL_PHYSPAL, curpal, 0, 256);
+	SDL_SetColors(curSurface, curpal, 0, 256);
+	VGAClearScreen (); // vbt : maj du fond d'écran
+//	VL_UnlockSurface(curSurface);
+#ifdef PONY
+	m68k_com->start = (m68k_com->start != 0xFFFF) ? 1 : m68k_com->start;
+#endif
 }
+
 
 //#endif
 
@@ -168,10 +181,10 @@ int32_t DoChecksum(byte *source,unsigned size,int32_t checksum)
 =
 ==================
 */
-
+#ifndef EMBEDDED
 extern statetype s_grdstand;
 extern statetype s_player;
-
+#endif
 boolean SaveTheGame(FILE *file,int x,int y)
 {
 //    struct diskfree_t dfree;
@@ -483,7 +496,7 @@ boolean LoadTheGame(FILE *file,int x,int y)
 =
 ==========================
 */
-
+/*
 void ShutdownId (void)
 {
     US_Shutdown ();         // This line is completely useless...
@@ -496,7 +509,7 @@ void ShutdownId (void)
     GP2X_Shutdown();
 #endif
 }
-
+*/
 
 //===========================================================================
 
@@ -517,6 +530,7 @@ const float radtoint = (float)(FINEANGLES/2/PI);
 
 void BuildTables (void)
 {
+#ifndef EMBEDDED2
     //
     // calculate fine tangents
     //
@@ -549,6 +563,73 @@ void BuildTables (void)
 #if defined(USE_STARSKY) || defined(USE_RAIN) || defined(USE_SNOW)
     Init3DPoints();
 #endif
+
+#else
+	int i;
+	long    intang;
+	int     halfview;
+	double tang, angle, anglestep, facedist;
+	fixed value;
+	fixed scale;
+
+	/* FIXME: Use linear interpolation to reduce size of trig tables. */
+/* calculate fine tangents */
+
+	angle = 0.0;
+	anglestep = PI/2.0/ANGLEQUAD;
+
+    for(i=0; i<ANGLEQUAD; i++)
+    {
+        fixed value=(int32_t)(GLOBAL1*sin(angle));
+        sintable[i]=sintable[i+ANGLES]=sintable[ANGLES/2-i]=value;
+        sintable[ANGLES-i]=sintable[ANGLES/2+i]=-value;
+        angle+=anglestep;
+    }
+    sintable[ANGLEQUAD] = 65536;
+    sintable[3*ANGLEQUAD] = -65536;
+
+	finetangent[0] = 0;
+	for (i = 1; i < FINEANGLES/8; i++) {
+		tang = tan((double)i/radtoint);
+		finetangent[i] = tang*TILEGLOBAL;
+		finetangent[FINEANGLES/4-1-i] = TILEGLOBAL/tang;
+	}
+	
+	/* fight off asymptotic behaviour at 90 degrees */
+	finetangent[FINEANGLES/4-1] = finetangent[FINEANGLES/4-2]+1;
+	
+//
+// costable overlays sintable with a quarter phase shift
+// ANGLES is assumed to be divisable by four
+//
+
+	angle = 0.0;
+	anglestep = PI/2.0/ANGLEQUAD;
+
+	for (i = 0; i < ANGLEQUAD; i++) {
+	    value = GLOBAL1*sin(angle);
+	    angle += anglestep;
+	}
+
+	facedist = 0x5800+MINDIST;
+	halfview = 64;               /* half view in pixels */
+
+/*
+ calculate scale value for vertical height calculations
+ and sprite x calculations
+*/
+	scale = halfview*facedist/(VIEWGLOBAL/2);
+
+/* calculate the angle offset from view angle of each pixel's ray */
+	for (i = 0; i < halfview; i++) 
+	{
+		tang = ((double)i)*VIEWGLOBAL/128/facedist;
+		angle = atan(tang);
+		intang = angle*radtoint;
+		pixelangle[halfview-1-i] = intang;
+		pixelangle[halfview+i] = -intang;
+	}
+#endif
 }
 
 //===========================================================================
@@ -564,20 +645,25 @@ void BuildTables (void)
 ====================
 */
 
-double FastArcTan(double x)
+inline double FastArcTan(double x)
 {
     return M_PI_4*x - x*(fabs(x) - 1)*(0.2447 + 0.0663*fabs(x));
 }
 
 inline void CalcProjection (int32_t focal)
 {
+#ifdef EMBEDDED2
+	long facedist;
+#else	
     int     i;
     int    intang;
     //float   angle;
     //double  tang;
-    int     halfview;
     //double  facedist;
-	double  angle, tang, facedist;
+	double  angle, tang;
+	double facedist;
+#endif
+    int     halfview;
 
     focallength = focal;
     facedist = focal+MINDIST;
@@ -598,7 +684,7 @@ inline void CalcProjection (int32_t focal)
     //
     // calculate the angle offset from view angle of each pixel's ray
     //
-
+#ifndef EMBEDDED2
     for (i=0;i<halfview;i++)
     {
         // start 1/2 pixel over, so viewangle bisects two middle pixels
@@ -613,6 +699,7 @@ inline void CalcProjection (int32_t focal)
         pixelangle[halfview-1-i] = intang;
         pixelangle[halfview+i] = -intang;
     }
+#endif	
 }
 
 
@@ -628,7 +715,7 @@ inline void CalcProjection (int32_t focal)
 =
 ===================
 */
-
+#ifndef EMBEDDED
 void SetupWalls (void)
 {
     int     i;
@@ -642,7 +729,7 @@ void SetupWalls (void)
         vertwall[i]=(i-1)*2+1;
     }
 }
-
+#endif
 //===========================================================================
 
 /*
@@ -676,7 +763,7 @@ void FinishSignon (void)
 	// vbt : fait un fond violet
     VW_Bar (0,189,300,11,VL_GetPixel(0,0));
     WindowX = 0;
-    WindowW = 320;
+    WindowW = SATURN_WIDTH;
     PrintY = 190;
 
     #ifndef JAPAN
@@ -689,9 +776,9 @@ void FinishSignon (void)
     #endif
 
     #endif
-	
+#ifndef USE_SPRITES	
     VH_UpdateScreen();
-	
+#endif	
     if (!param_nowait)
 	{
         IN_Ack ();
@@ -707,15 +794,17 @@ void FinishSignon (void)
     US_CPrint ("pensando...");
     #else
     US_CPrint ("Working...");
+	
     #endif
-
+#ifndef USE_SPRITES
     VH_UpdateScreen();
+#endif
     #endif
-
     SETFONTCOLOR(0,15);
 #else
+#ifndef USE_SPRITES	
     VH_UpdateScreen();
-
+#endif
     if (!param_nowait)
         VW_WaitVBL(3*70);
 #endif
@@ -736,6 +825,7 @@ void FinishSignon (void)
 //   0: player weapons
 //   1: boss weapons
 //vbtvbt sound reference
+#ifndef USE_ADX
 static int wolfdigimap[] =
     {
         // These first sounds are in the upload version
@@ -781,6 +871,7 @@ static int wolfdigimap[] =
         MECHSTEPSND,            31, -1,
 
         SCHEISTSND,             33, -1,
+#ifndef APOGEE_1_0		
         DEATHSCREAM4SND,        34, -1,         // AIIEEE
         DEATHSCREAM5SND,        35, -1,         // DEE-DEE
         DONNERSND,              36, -1,         // EPISODE 4 BOSS DIE
@@ -793,6 +884,7 @@ static int wolfdigimap[] =
         KEINSND,                43, -1,         // EPISODE 5 BOSS SIGHTING
         MEINSND,                44, -1,         // EPISODE 6 BOSS DIE
         ROSESND,                45, -1,         // EPISODE 5 BOSS DIE
+#endif		
 #else
 //
 // SPEAR OF DESTINY DIGISOUNDS
@@ -844,10 +936,27 @@ static int wolfdigimap[] =
 #endif
         LASTSOUND
     };
-
+#endif
 
 void InitDigiMap (void)
 {
+#ifdef PONY	
+#ifndef USE_ADX
+    int *map;
+	
+	for (int i = 0; i < LASTSOUND; i++)
+		DigiMap[i] = -1;	
+	
+    for (map = wolfdigimap; *map != LASTSOUND; map += 3)
+    {
+        DigiMap[map[0]] = map[1];
+    }
+#endif	
+    for (int i = 0; i<47; i++)
+    {
+        SD_PrepareSound(i);
+    }
+#else
     int *map;
     for (map = wolfdigimap; *map != LASTSOUND; map += 3)
     {
@@ -855,8 +964,9 @@ void InitDigiMap (void)
 //        DigiChannel[map[1]] = map[2];
         SD_PrepareSound(map[1]);
     }
+#endif	
 }
-
+/*
 #ifndef SPEAR
 CP_iteminfo MusicItems={CTL_X,CTL_Y,6,0,32};
 CP_itemtype MusicMenu[]=
@@ -977,7 +1087,7 @@ void DoJukebox(void)
     SETFONTCOLOR (READHCOLOR,BKGDCOLOR);
     PrintY=15;
     WindowX = 0;
-    WindowY = 320;
+    WindowY = SATURN_WIDTH;
     US_CPrint ("Robert's Jukebox");
 
     SETFONTCOLOR (TEXTCOLOR,BKGDCOLOR);
@@ -1009,7 +1119,7 @@ void DoJukebox(void)
 #endif
 }
 #endif
-
+*/
 /*
 ==========================
 =
@@ -1026,22 +1136,29 @@ static void InitGame()
     boolean didjukebox=false;
 #endif
 
+#ifdef EMBEDDED
+	for (int i = 0;i < MAPSIZE; i++)
+	{
+		farmapylookup[i] = i*64;
+	}
+#endif
     // initialize SDL
 #if defined _WIN32
     putenv("SDL_VIDEODRIVER=directx");
 #endif
-    if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) < 0)
+    if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK) < 0)
     {
 //        printf("Unable to init SDL: %s\n", SDL_GetError());
-        exit(1);
+        SYS_Exit(1);
     }
 	SDL_SetVideoMode  (screenWidth, screenHeight, screenBits, NULL);
-
+	SDL_Init(SDL_INIT_AUDIO);
 //#ifndef REMDEBUG
 	slIntFunction(VblIn) ;
 //#endif
-    atexit(SDL_Quit);
+//    atexit(SDL_Quit);
     SignonScreen ();
+//slPrint("slScrTransparent4",slLocate(1,17));		
 	 slScrTransparent(NBG1ON);
 	 
 #if defined _WIN32
@@ -1061,21 +1178,21 @@ static void InitGame()
 #endif
 	//ajout VBT
 //param_nowait = true;
-//slPrint((char *)"VH_Startup     ",slLocate(10,12));
+////slPrint((char *)"VH_Startup     ",slLocate(10,12));
     VH_Startup ();
 //    IN_Startup (); // VBT à remettre
-//slPrint((char *)"PM_Startup     ",slLocate(10,12));
+////slPrint((char *)"PM_Startup     ",slLocate(10,12));
     PM_Startup ();
-//slPrint((char *)"SD_Startup     ",slLocate(10,12));
+////slPrint((char *)"SD_Startup     ",slLocate(10,12));
     SD_Startup ();
-//slPrint((char *)"CA_Startup     ",slLocate(10,12));
+////slPrint((char *)"CA_Startup     ",slLocate(10,12));
     CA_Startup ();
-//slPrint((char *)"US_Startup     ",slLocate(10,12));
+////slPrint((char *)"US_Startup     ",slLocate(10,12));
     US_Startup ();
     // TODO: Will any memory checking be needed someday??
 //
 // build some tables
-//slPrint((char *)"InitDigiMap     ",slLocate(10,12));
+////slPrint((char *)"InitDigiMap     ",slLocate(10,12));
     InitDigiMap ();
 	viewsize = 19;                          // start with a good size
 
@@ -1084,7 +1201,7 @@ static void InitGame()
 //
 // HOLDING DOWN 'M' KEY?
 //
-
+/*
 #ifndef SPEARDEMO
     if (Keyboard[sc_M])
     {
@@ -1093,7 +1210,7 @@ static void InitGame()
     }
     else
 #endif
-
+*/
 //
 // draw intro screen stuff
 //
@@ -1102,22 +1219,23 @@ static void InitGame()
 //
 // load in and lock down some basic chunks
 //
-
     CA_CacheGrChunk(STARTFONT);
-
     CA_CacheGrChunk(STATUSBARPIC);
 //	slTVOff();
-    LoadLatchMem ();	   
-    BuildTables ();          // trig tables
+   LoadLatchMem ();	   
+   BuildTables ();          // trig tables
+#ifndef EMBEDDED   
     SetupWalls ();
+#endif	
     NewViewSize (viewsize);
-		slTVOn();
-//		slSynch();
-//	slPrint("C4 - 2008-2009     www.rockin-b.de",slLocate(2,29));
+
+//		slTVOn();
+		slSynch();
+//	//slPrint("C4 - 2008-2009     www.rockin-b.de",slLocate(2,29));
 //
 // initialize variables
 //
-    InitRedShifts ();		
+    InitRedShifts ();	
 #ifndef SPEARDEMO
     if(!didjukebox)
 #endif
@@ -1145,18 +1263,21 @@ boolean SetViewSize (unsigned width, unsigned height)
     centerx = viewwidth/2-1;
     shootdelta = viewwidth/10;
     if((unsigned) viewheight == screenHeight)
-        viewscreenx = viewscreeny = screenofs = 0;
+        viewscreenx = viewscreeny = 0;
     else
     {
         viewscreenx = (screenWidth-viewwidth) / 2;
         viewscreeny = (screenHeight-scaleFactor*STATUSLINES-viewheight)/2;
-        screenofs = viewscreeny*screenWidth+viewscreenx;
     }
 // calculate trace angles and projection constants
 //
     CalcProjection (FOCALLENGTH);
+#ifndef EMBEDDED	
+	min_wallheight = viewheight;
+#endif
+
 #ifdef USE_SPRITES
-	VGAClearScreen ();
+//	VGAClearScreen ();
 #endif
     return true;
 }
@@ -1183,8 +1304,8 @@ void ShowViewSize (int width)
     }
     else
     {
-        viewwidth = width*16*screenWidth/320;
-        viewheight = (int) (width*16*HEIGHTRATIO*screenHeight/200);
+        viewwidth = width*16*screenWidth/SATURN_WIDTH;
+        viewheight = (int) (width_to_height(width*16)*screenHeight/200);
         DrawPlayBorder ();
     }
 
@@ -1201,7 +1322,8 @@ void NewViewSize (int width)
     else if(viewsize == 20)
         SetViewSize(screenWidth, screenHeight - scaleFactor * STATUSLINES);
     else
-        SetViewSize(width*16*screenWidth/320, (unsigned) (width*16*HEIGHTRATIO*screenHeight/200));
+        SetViewSize(width*16*screenWidth/SATURN_WIDTH, (unsigned) (width_to_height(width*16)*screenHeight/200));
+// xxx	VGAClearScreen ();
 }
 
 
@@ -1223,6 +1345,7 @@ void Quit (const char *errorStr, ...)
     byte *screen;
 #endif
     char error[256];
+	
     if(errorStr != NULL)
     {
         va_list vlist;
@@ -1231,11 +1354,10 @@ void Quit (const char *errorStr, ...)
         va_end(vlist);
     }
     else error[0] = 0;
- 	slPrint((char *)error,slLocate(1,3));
 	
     if (!pictable)  // don't try to display the red box before it's loaded
     {
-        ShutdownId();
+//        ShutdownId();
         if (error && *error)
         {
 #ifdef NOTYET
@@ -1247,7 +1369,7 @@ void Quit (const char *errorStr, ...)
 #endif
             VW_WaitVBL(100);
         }
-        exit(1);
+        SYS_Exit(1);
     }
 
     if (!error || !*error)
@@ -1267,7 +1389,7 @@ void Quit (const char *errorStr, ...)
     }
 #endif
 
-    ShutdownId ();
+//    ShutdownId ();
 
     if (error && *error)
     {
@@ -1280,7 +1402,7 @@ void Quit (const char *errorStr, ...)
         SetTextCursor(0,7);
 #endif
         VW_WaitVBL(200);
-        exit(1);
+        SYS_Exit(1);
     }
     else
     if (!error || !(*error))
@@ -1292,7 +1414,7 @@ void Quit (const char *errorStr, ...)
         SetTextCursor(0,23);
 #endif
     }
-    exit(0);
+    SYS_Exit(0);
 }
 
 //===========================================================================
@@ -1314,7 +1436,7 @@ static void DemoLoop()
 //
 // check for launch from ted
 //
-    if (param_tedlevel != -1)
+/*    if (param_tedlevel != -1)
     {
         param_nowait = true;
         EnableEndGameMenuItem();
@@ -1330,7 +1452,7 @@ static void DemoLoop()
         GameLoop();
         Quit (NULL);
     }
-
+*/
 
 //
 // main game cycle
@@ -1364,16 +1486,23 @@ static void DemoLoop()
 //    if (!param_nowait)
 //        PG13 ();
 //    else
+//slPrint((char*)"StartCPMusic",slLocate(10,22));	
+
 		StartCPMusic(INTROSONG);
+		
+//slPrint((char*)"StartCPMusic end",slLocate(10,22));			
 #endif
 
 #endif
 	param_nowait = false;
-
+	
     while (1)
     {
         while (!param_nowait)
         {
+//slPrint("slScrTransparent5",slLocate(1,17));				
+			slScrTransparent(NBG1ON);
+			slSynch(); // applique la non transparence
 //
 // title page
 //
@@ -1396,12 +1525,17 @@ static void DemoLoop()
 
             UNCACHEGRCHUNK (TITLEPALETTE);
 #else
-//slPrint((char*)"CA_CacheScreen1",slLocate(10,22));		
+//slPrint((char*)"CA_CacheScreen1",slLocate(10,22));	
             CA_CacheScreen (TITLEPIC);
-//slPrint((char*)"VW_UpdateScreen1",slLocate(10,22));			
+//slPrint((char*)"VW_UpdateScreen1",slLocate(10,22));
+
+#ifndef USE_SPRITES			
             VW_UpdateScreen ();
+#endif
+
 //slPrint((char*)"VW_FadeIn1",slLocate(10,22));				
             VW_FadeIn();
+		
 #endif
 	// VBT déplacé
 //slPrint((char*)"StartCPMusic",slLocate(10,22));	
@@ -1415,7 +1549,9 @@ static void DemoLoop()
 // credits page
 //
             CA_CacheScreen (CREDITSPIC);
+#ifndef USE_SPRITES			
             VW_UpdateScreen();
+#endif			
             VW_FadeIn ();
             if (IN_UserInput(TickBase*10))
                 break;
@@ -1424,7 +1560,9 @@ static void DemoLoop()
 // high scores
 //
             DrawHighScores ();
+#ifndef USE_SPRITES			
             VW_UpdateScreen ();
+#endif			
             VW_FadeIn ();
             if (IN_UserInput(TickBase*10))
                 break;
@@ -1459,6 +1597,7 @@ static void DemoLoop()
 #endif
         if (startgame)
         {
+//			slIntFunction(VblIn) ;
             GameLoop ();
             if(!param_nowait)
             {
@@ -1480,6 +1619,26 @@ static void DemoLoop()
 
 int main (int argc, char *argv[])
 {
+	
+#define		SystemWork		0x060ffc00		/* System Variable Address */
+#define		SystemSize		(0x06100000-0x060ffc00)		/* System Variable Size */
+	
+	extern Uint32 _bstart, _bend;
+	Uint8	*dst;
+	Uint32	i;
+
+	/* 1.Zero Set .bss Section */
+	for( dst = (Uint8 *)&_bstart; dst < (Uint8 *)&_bend; dst++ ) {
+		*dst = 0;
+	}
+	/* 2.ROM has data at end of text; copy it. */
+
+	/* 3.SGL System Variable Clear */
+	for( dst = (Uint8 *)SystemWork, i = 0;i < SystemSize; i++) {
+		*dst = 0;
+	}	
+	
+	
 #if defined(_arch_dreamcast)
     DC_Main();
     DC_CheckParameters();
@@ -1499,6 +1658,8 @@ int main (int argc, char *argv[])
     CheckForEpisodes();
 
     InitGame();
+//slPrintHex(screen->pixels,slLocate(20,14));
+//slPrint((char*)"DemoLoop",slLocate(10,22));	
 
     DemoLoop();
 
