@@ -21,13 +21,15 @@
 //
 
 #include "wl_def.h"
+extern "C"
+{
 #include <stdlib.h>
-//#include <string.h>
+#include <string.h>
 char 	*strdup (const char *) __malloc_like __result_use_check;
 #if _MSC_VER == 1200            // Visual C++ 6
 	#define vsnprintf _vsnprintf
 #endif
-
+}
 //	Global variables
 		word		PrintX,PrintY;
 		word		WindowX,WindowY,WindowW,WindowH;
@@ -150,7 +152,7 @@ US_Print(const char *sorg)
 			PrintX += w;
 	}
 	free(sstart);
-	sstart = NULL;	
+	sstart = NULL;
 //#endif
 }
 

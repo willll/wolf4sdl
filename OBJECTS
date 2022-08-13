@@ -26,16 +26,15 @@
 
 OBJS = $(filter %.o, $(SRCS:.s=.o) $(SRCS:.c=.o) $(SRCS:.cpp=.o))
 LIBS = C:/SaturnOrbit/SGL_302j/LIB_ELF/libsgl_real_elf.a \
-L:/vbtsh8/toolchain/sh-elf/lib/libc.a \
-l:/saturn/SBL6/SEGALIB/GFS/elf/gfs2.o \
-l:/saturn/SBL6/SEGALIB/GFS/elf/gfs_cdb2.o \
-l:/saturn/SBL6/SEGALIB/GFS/elf/gfs_cdc2.o \
-l:/saturn/SBL6/SEGALIB/GFS/elf/gfs_cdf2.o \
-l:/saturn/SBL6/SEGALIB/GFS/elf/gfs_trn2.o \
-l:/saturn/SBL6/SEGALIB/GFS/elf/gfs_buf2.o \
-l:/saturn/SBL6/SEGALIB/GFS/elf/gfs_dir2.o \
-L:/saturn/SBL6/SEGALIB/LIB/vbtelf2/sega_mth.a \
-L:/saturn/SBL6/SEGALIB/LIB/vbtelf2/sega_dma.a \
-L:/saturn/SBL6/SEGALIB/LIB/vbtelf2/sega_int.a \
-L:/saturn/SBL6/SEGALIB/LIB/vbtelf2/sega_sys.a \
-L:/saturn/SBL6/SEGALIB/LIB/vbtelf4/cdcrep.a
+C:/vbt/saturn/SBL6/SEGALIB/GFS/elf/gfs2.o \
+C:/vbt/saturn/SBL6/SEGALIB/GFS/elf/gfs_cdb2.o \
+C:/vbt/saturn/SBL6/SEGALIB/GFS/elf/gfs_cdc2.o \
+C:/vbt/saturn/SBL6/SEGALIB/GFS/elf/gfs_cdf2.o \
+C:/vbt/saturn/SBL6/SEGALIB/GFS/elf/gfs_trn2.o \
+C:/vbt/saturn/SBL6/SEGALIB/GFS/elf/gfs_buf2.o \
+C:/vbt/saturn/SBL6/SEGALIB/GFS/elf/gfs_dir2.o \
+C:/vbt/saturn/SBL6/SEGALIB/LIB/vbtelf2/sega_mth.a \
+C:/vbt/saturn/SBL6/SEGALIB/LIB/vbtelf2/sega_dma.a \
+C:/vbt/saturn/SBL6/SEGALIB/LIB/vbtelf2/sega_int.a \
+C:/vbt/saturn/SBL6/SEGALIB/LIB/vbtelf2/sega_sys.a \
+C:/vbt/saturn/SBL6/SEGALIB/LIB/vbtelf4/cdcrep.a

@@ -2,7 +2,7 @@
 #define WL_DEF_H
 
 #define USE_SPRITES 1
-#define PONY 1
+#define PONY 1 
 #define USE_ADX 1
 #define USE_SLAVE 1
 #define EMBEDDED 1
@@ -17,7 +17,7 @@ extern "C" {
 #include <malloc.h>
 //#include "C:\vbt\saturn\vbtsh4\toolchain\sh-elf\include\string.h"
 //#include "C:\vbt\saturn\vbtsh4\toolchain\sh-elf\include\stdlib.h"
-}
+
 // Defines which version shall be built and configures supported extra features
 #include "version.h"
 
@@ -34,6 +34,7 @@ extern "C" {
 #	include <string.h>
 #	include <stdarg.h>
 #endif
+}
 #include "sdl/SDL.h"
 
 #if !defined O_BINARY
@@ -861,12 +862,12 @@ typedef struct objstruct
     activetype  active:2;
     short       ticcount;
     classtype   obclass:5;
-#ifndef EMBEDDED
+#ifndef EMBEDDED	
     statetype   *state;
 #else
 	int		id;
 	int		state; /* stateenum */
-#endif
+#endif	
     uint32_t    flags;              // FL_SHOOTABLE, etc
 
     int32_t     distance;           // if negative, wait for that door to open
@@ -1533,9 +1534,8 @@ inline static fixed FixedMul(fixed a, fixed b)
     #define strcasecmp stricmp
     #define strncasecmp strnicmp
 #else
-    inline char* itoa(int value, char* string, int dummy = 10)
+    inline char* itoa(int value, char* string)
     {
-      dummy;
 	    sprintf(string, "%d", value);
 	    return string;
     }

@@ -242,15 +242,15 @@ Victory (void)
 #ifndef USE_SPRITES	
     VW_UpdateScreen ();
 #endif
-    itoa (kr, tempstr, 10);
+    itoa (kr, tempstr);
     x = RATIOX + 24 - (int) strlen(tempstr) * 2;
     Write (x, RATIOY, tempstr);
 
-    itoa (sr, tempstr, 10);
+    itoa (sr, tempstr);
     x = RATIOX + 24 - (int) strlen(tempstr) * 2;
     Write (x, RATIOY + 2, tempstr);
 
-    itoa (tr, tempstr, 10);
+    itoa (tr, tempstr);
     x = RATIOX + 24 - (int) strlen(tempstr) * 2;
     Write (x, RATIOY + 4, tempstr);
 
@@ -587,7 +587,7 @@ LevelCompleted (void)
         Write (1, 18, STR_RAT2TREASURE);
 #endif
 
-        Write (26, 2, itoa (gamestate.mapon + 1, tempstr, 10));
+        Write (26, 2, itoa (gamestate.mapon + 1, tempstr));
 #endif
 
 #ifdef SPANISH
@@ -682,7 +682,7 @@ LevelCompleted (void)
         ratio = kr;
         for (i = 0; i <= ratio; i++)
         {
-            itoa (i, tempstr, 10);
+            itoa (i, tempstr);
             x = RATIOXX - (int) strlen(tempstr) * 2;
             Write (x, 14, tempstr);
             if (!(i % 10))
@@ -1101,7 +1101,7 @@ DrawHighScores (void)
         //
         // level
         //
-        itoa (s->completed, buffer, 10);
+        itoa (s->completed, buffer);
 #ifndef SPEAR
         for (str = buffer; *str; str++)
             *str = *str + (129 - '0');  // Used fixed-width numbers (129...)
@@ -1115,7 +1115,7 @@ DrawHighScores (void)
 #ifndef UPLOAD
 #ifndef SPEAR
         PrintX -= 6;
-        itoa (s->episode + 1, buffer1, 10);
+        itoa (s->episode + 1, buffer1);
         US_Print ("E");
         US_Print (buffer1);
         US_Print ("/L");
@@ -1132,7 +1132,7 @@ DrawHighScores (void)
         //
         // score
         //
-        itoa (s->score, buffer, 10);
+        itoa (s->score, buffer);
 #ifndef SPEAR
         for (str = buffer; *str; str++)
             *str = *str + (129 - '0');  // Used fixed-width numbers (129...)

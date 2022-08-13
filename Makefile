@@ -24,22 +24,22 @@ OBJECTS = ./objects
 
 # option
 #CCFLAGS = -O2 -m2 -g -c -I$(SGLIDR)
-# -fomit-frame-pointer -fsort-data
+# -fomit-frame-pointer -fsort-data 
 #CCFLAGS = -O2 -m2 -Wno-narrowing -fuse-linker-plugin -fno-web -fno-gcse -fno-unit-at-a-time -fomit-frame-pointer -flto
 #CCFLAGS = -O2 -m2 -Wno-narrowing -fno-web -fno-gcse -fno-unit-at-a-time -fomit-frame-pointer -fpermissive -fno-lto -fno-builtin
 #CCFLAGS = -Os -m2 -Wno-conversion-null -Wno-narrowing -fuse-linker-plugin -fno-unit-at-a-time -fomit-frame-pointer -flto -fpermissive -fno-builtin
-#CCFLAGS = -save-temps -Os -g3 -m2 -Wformat-diag -Wno-conversion-null -fno-lto -Wshadow -Wall -Wswitch -Wpadded -fno-common -Wextra -Wno-narrowing -fno-web -fno-builtin -funit-at-a-time -Wwrite-strings -Wl,--strip-all -Wl,--verbose -mno-fsrra -maccumulate-outgoing-args -fomit-frame-pointer -D_SH -DMODEL_S
-CCFLAGS =  -fpermissive  -O2 -m2 -falign-functions=4 -Wformat-diag -Wno-conversion-null -fno-lto -Wshadow -Wall -Wswitch -Wpadded -fno-common -Wextra -Wno-narrowing -fno-web -fno-builtin -funit-at-a-time -Wwrite-strings -Wl,--strip-all -Wl,--verbose -mno-fsrra -maccumulate-outgoing-args -fomit-frame-pointer -D_SH -DMODEL_S
+#CCFLAGS = -save-temps -Os -g3 -m2 -Wformat-diag -Wno-conversion-null -fno-lto -Wshadow -Wall -Wswitch -Wpadded -fno-common -Wextra -Wno-narrowing -fno-web -fno-builtin -funit-at-a-time -Wwrite-strings -Wl,--strip-all -Wl,--verbose -mno-fsrra -maccumulate-outgoing-args -fomit-frame-pointer -D_SH -DMODEL_S 
+CCFLAGS =  -fpermissive  -O2 -m2 -falign-functions=4 -Wformat-diag -Wno-conversion-null -fno-lto -Wshadow -Wall -Wswitch -Wpadded -fno-common -Wextra -Wno-narrowing -fno-web -fno-builtin -funit-at-a-time -Wwrite-strings -Wl,--strip-all -Wl,--verbose -mno-fsrra -maccumulate-outgoing-args -fomit-frame-pointer -D_SH -DMODEL_S 
 #CCFLAGS = -O0 -m2 -Wno-write-strings -Wno-narrowing -fno-lto
 CCFLAGS += $(CFLAGS)
 #CCFLAGS += -std=gnu99
 #CCFLAGS += -Werror-implicit-function-declaration
 #CCFLAGS += -Wimplicit-int
-CCFLAGS += -fno-rtti
+CCFLAGS += -fno-rtti 
 CCFLAGS += -fno-exceptions
 #CCFLAGS += -Wsequence-point
-#CCFLAGS += -c -lm -lc -lgcc -I$(SGLIDR)
-CCFLAGS += -c -I$(SGLIDR)
+#CCFLAGS += -c -lm -lc -lgcc -I$(SGLIDR) 
+CCFLAGS += -c -I$(SGLIDR) 
 
 # -m2 must be specified in LDFLAGS so the linker will search the SH2 lib dirs
 # Specify path of libsgl.a by using "-L" option
@@ -48,16 +48,16 @@ DFLAGS =
 include $(OBJECTS)
 
 #LDFLAGS = -O2 -m2  -fuse-linker-plugin  -Xlinker -n -Xlinker -flto -Xlinker -T$(LDFILE) -Xlinker -Map \
-#          -Xlinker $(MPFILE) -Xlinker -e -Xlinker ___Start -Xlinker -S -nostartfiles
+#          -Xlinker $(MPFILE) -Xlinker -e -Xlinker ___Start -Xlinker -S -nostartfiles 
 LDFLAGS = -m2 -Xlinker -n -Xlinker -T$(LDFILE) -Xlinker -Map \
           -Xlinker $(MPFILE) -Xlinker -e -Xlinker ___Start -Xlinker -S -nostartfiles
-		  # -fno-builtin
-#          -Xlinker $(MPFILE) -Xlinker -e -Xlinker ___Start -nostartfiles -LL:/GNUSHV12/sh-elf/sh-elf/lib/m2/libc.a -LC:/SaturnOrbit/SGL_302j/LIB_ELF/LIBSGL.A
+		  # -fno-builtin 
+#          -Xlinker $(MPFILE) -Xlinker -e -Xlinker ___Start -nostartfiles -LL:/GNUSHV12/sh-elf/sh-elf/lib/m2/libc.a -LC:/SaturnOrbit/SGL_302j/LIB_ELF/LIBSGL.A 
 TARGET   = root/sl.coff
 TARGET1  = root/sl.bin
 MPFILE   = $(TARGET:.coff=.maps)
 IPFILE   = $(CMNDIR)/IP.BIN
-LDFILE   = root/sl.lnk
+LDFILE   = root/SL.LNK
 MAKEFILE = makefile
 
 
@@ -126,3 +126,6 @@ $(TARGET1) : $(SYSOBJS) $(OBJS) $(MAKEFILE) $(LDFILE)
 
 clean:
 	$(RM) $(OBJS) $(TARGET) $(TARGET1) $(TARGET2) $(MPFILE) cd/0.bin
+
+
+
