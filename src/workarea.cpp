@@ -4,7 +4,7 @@
 /*                                                                         */
 /*-------------------------------------------------------------------------*/
 extern "C" {
-#include	"C:/SaturnOrbit/SGL_302j/INC/sl_def.h"
+#include "sl_def.h"
 }
 /*---- [1.This part must not be modified] ---------------------------------*/
 #define		SystemWork		0x060ffc00			/* System Variable         */
@@ -39,8 +39,8 @@ extern "C" {
 /*
     enum workarea{
         sort_list  = WORK_AREA ,
-        zbuffer    = AdjWork(sort_list , _LongWord_ * 3, MAX_POLYGONS + 6) ,		
-        trans_list = AdjWork(zbuffer  , _LongWord_, 512) , 
+        zbuffer    = AdjWork(sort_list , _LongWord_ * 3, MAX_POLYGONS + 6) ,
+        trans_list = AdjWork(zbuffer  , _LongWord_, 512) ,
         spritebuf  = AdjWork(trans_list , _LongWord_ * 3, MAX_TRANSFER) ,
         pbuffer    = AdjWork(spritebuf , _Sprite_, (MAX_POLYGONS + 6) * 2) ,
         clofstbuf  = AdjWork(pbuffer   , _LongWord_ * 4, MAX_VERTICES) ,
@@ -96,4 +96,4 @@ extern "C" {
     WORK   WorkBuf[MAX_WORKS] ;
     EVENT* RemainEvent[MAX_EVENTS] ;
     WORK*  RemainWork[MAX_WORKS] ;
-*/	
+*/
