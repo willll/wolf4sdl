@@ -25,15 +25,18 @@ project( ${TARGET_NAME} VERSION 1.0
 
 set(as_flags )
 set(cxx_flags
-        -O2 -g3 -m2 -fpermissive
+        -O2 -m2 -fpermissive
         -Wno-conversion-null
-        -fno-lto -Wshadow -Wall -Wswitch -Wpadded
-        -Wextra -Wno-narrowing -fno-web
-        -fno-builtin -funit-at-a-time -Wwrite-strings
+        -Wshadow -Wall -Wswitch -Wpadded
+        -Wextra -Wno-narrowing -Wwrite-strings
+        -fno-web -fno-lto
+        -falign-functions=4
+        -fno-builtin -funit-at-a-time
         -Wl,--strip-all -Wl,--verbose -mno-fsrra
         -maccumulate-outgoing-args -fomit-frame-pointer
         -fno-rtti -fno-exceptions
         -fno-common
+        -c
          )
 
 set(SOURCES
@@ -90,7 +93,7 @@ target_link_options(${TARGET_NAME}.elf PUBLIC
     "SHELL:-m2 -nostartfiles"
     "SHELL:-T ${PROJECT_SOURCE_DIR}/root/sl.lnk"
     "SHELL:-Xlinker -e -Xlinker ___Start -Xlinker -S -nostartfiles"
-    "SHELL:-lc -lgcc"
+#    "SHELL:-lc -lgcc"
 )
 
 target_link_libraries(${TARGET_NAME}.elf PUBLIC ${JOSGL}/LIBSGL.A )
@@ -120,6 +123,13 @@ file(GLOB_RECURSE EXISTING_FILES
 
 if (EXISTING_FILES)
     file (REMOVE_RECURSE ${EXISTING_FILES})
+endif()
+
+file(GLOB SL_BIN
+      ${PROJECT_SOURCE_DIR}/root/sl.bin)
+
+if (SL_BIN)
+    file (REMOVE ${SL_BIN})
 endif()
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.bin
