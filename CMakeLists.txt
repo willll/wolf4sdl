@@ -11,7 +11,7 @@ set(CMAKE_STATIC_LIBRARY_PREFIX "")
 set(SEGALIB $ENV{SATURN_SBL}/segalib)
 set(SEGASGL $ENV{SATURN_SGL})
 set(JOSGL $ENV{SATURN_JOENGINE}/common/SGL_302j/LIB_ELF)
-
+set(JOSGL_INC $ENV{SATURN_JOENGINE}/common/SGL_302j/INC)
 
 set(SATURN_COMMON $ENV{SATURN_COMMON})
 set(SATURN_CMAKE $ENV{SATURN_CMAKE})
@@ -76,7 +76,7 @@ target_include_directories(
     src
     sdl
     ${SEGALIB}/include
-    ${SEGASGL}/include
+    ${JOSGL_INC}
     )
 
 target_compile_options(${TARGET_NAME}.elf PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${cxx_flags}>
@@ -107,34 +107,56 @@ target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_dma.a )
 target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_int.a )
 target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_sys.a )
 
-add_custom_target(run_${TARGET_NAME} ALL DEPENDS ${TARGET_NAME}.elf ${TARGET_NAME}.bin IP.BIN)
+add_custom_target(run_${TARGET_NAME} ALL DEPENDS ${TARGET_NAME}.elf ${TARGET_NAME}.bin)
 
 add_custom_command(OUTPUT ${TARGET_NAME}.bin
                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
                    COMMAND ${CMAKE_OBJCOPY}
                    ARGS -O binary ${TARGET_NAME}.elf ${TARGET_NAME}.bin )
 
+file(GLOB_RECURSE EXISTING_FILES
+      LIST_DIRECTORIES true
+      ${PROJECT_SOURCE_DIR}/CD/*)
+
+if (EXISTING_FILES)
+    file (REMOVE_RECURSE ${EXISTING_FILES})
+endif()
+
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}.bin
-                 DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/CD
-                 RENAME 0.bin )
+                 DESTINATION ${PROJECT_SOURCE_DIR}/root
+                 RENAME sl.bin )
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/IP.BIN
-             DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/CD )
+install(FILES ${PROJECT_SOURCE_DIR}/root/IP.BIN
+             DESTINATION ${PROJECT_SOURCE_DIR}/CD )
 
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/${TARGET_NAME}.cue
-              DESTINATION ${CMAKE_CURRENT_BINARY_DIR} )
+install(FILES ${PROJECT_SOURCE_DIR}/FILES.txt
+            DESTINATION ${PROJECT_SOURCE_DIR}/CD )
 
+install(FILES ${PROJECT_SOURCE_DIR}/EXCLUDE.txt
+            DESTINATION ${PROJECT_SOURCE_DIR}/CD )
 
-list(TRANSFORM CD_FILES PREPEND "${CMAKE_INSTALL_PREFIX}/${INSTALL_DESTINATION}/${TARGET_PATH}/CD/" )
-list(TRANSFORM CD_FILES APPEND "\\n" )
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/root
+            DESTINATION ${PROJECT_SOURCE_DIR}/CD
+            PATTERN "sndw/*.pcm" EXCLUDE
+            PATTERN "sndw/*.wav" EXCLUDE
+            )
 
-set (filename ${CMAKE_INSTALL_PREFIX}/${INSTALL_DESTINATION}/${TARGET_PATH}/CD/FILES.txt)
-install(CODE "file(WRITE ${filename} ${CD_FILES})")
+#list(TRANSFORM CD_FILES PREPEND "${PROJECT_SOURCE_DIR}/CD/" )
+#list(TRANSFORM CD_FILES APPEND "\\n" )
 
-set(MAKE_CMD $ENV{SATURN_CD}/create_cd.sh
-   "${TARGET_NAME}" "\"SBL\"" "\"SBL\"" IP.BIN
-   "${TARGET_NAME}.iso" "${CMAKE_INSTALL_PREFIX}/${INSTALL_DESTINATION}/${TARGET_PATH}/")
+#set (filename ${PROJECT_SOURCE_DIR}/CD/FILES.txt)
+#install(CODE "file(WRITE ${filename} ${CD_FILES})")
+
+set(MAKE_CMD $ENV{SATURN_CD}/mkisofs -v -sysid "\"SEGA SEGASATURN\"" -volid "WOLF3D"
+                    -volset "WOLF3D" -publisher "VBT"
+                    -preparer "VBT" -appid "CD0001"
+                    -abstract "ABS.TXT" -copyright "CPY.TXT"
+                    -biblio "BIB.TXT" -generic-boot IP.BIN
+                    -full-iso9660-filenames -o ${PROJECT_SOURCE_DIR}/CD/${TARGET_NAME}.iso
+                    -exclude-list EXCLUDE.txt
+                    -graft-points
+                    -path-list FILES.txt)
 
 install(CODE "execute_process(COMMAND
                                ${MAKE_CMD}
-                               WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${INSTALL_DESTINATION}/${TARGET_PATH}/CD)")
+                               WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/CD) ")
