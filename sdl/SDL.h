@@ -6,7 +6,7 @@
 extern "C" {
 //#endif
 
-#include "sgl.h"
+#include "SGL.H"
 
 #include "sega_sys.h"
 #include "sega_gfs.h"
