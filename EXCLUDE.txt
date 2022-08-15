@@ -35,7 +35,7 @@ W3D*.*
 w3d*.*
 W3D
 w3d
-IP*.*
+IP.BIN
 ip*.*
 SL*.*
 sl*.*
