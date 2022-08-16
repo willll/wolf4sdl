@@ -8,7 +8,7 @@
 #include <malloc.h>
   #include "pcmsys.h"
 extern "C" {
-
+void VblIn(void);
 //#include "L:\saturn\dev\sms_elf2\cdc\SEGA_CDC.H"
 #include	"C:/SaturnOrbit/SGL_302j/INC/sl_def.h"
 //#ifdef VBT
@@ -296,6 +296,9 @@ int SDL_InitSubSystem(Uint32 flags)
 #ifdef PONY
 	sound_external_audio_enable(5, 5);
 	load_drv(ADX_MASTER_1536);
+// vbt on active la fonction au vblank	
+//	slIntFunction(VblIn) ;
+
 	
 //	add_raw_pcm_buffer(0,SOUNDRATE,nBurnSoundLen*20);
 #else		

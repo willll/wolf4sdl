@@ -56,8 +56,6 @@ uintptr_t lowsound = (uintptr_t)0x002C0000;
 
 void SD_PrepareSound(int which)
 {
-	Sint32 fileId;
-	long fileSize;
 	char filename[15];
 	unsigned char *mem_buf;
 #ifndef USE_ADX	
@@ -65,13 +63,12 @@ void SD_PrepareSound(int which)
 #else	
 	sprintf(filename,"%03d.ADX",which);
 #endif
- 	fileId = GFS_NameToId((Sint8*)filename);
 
 
 #ifdef PONY
-	if(fileId>0)
+//	if(fileId>0)
 	{
-		fileSize = GetFileSize(fileId);
+
 
 //		if(which <23)
 //		if(fileSize>8192 && fileSize<20000)
@@ -84,6 +81,13 @@ void SD_PrepareSound(int which)
 		} 
 	}
 #else
+	Sint32 fileId;
+	long fileSize;
+
+ 	fileId = GFS_NameToId((Sint8*)filename);
+
+		fileSize = GetFileSize(fileId);
+	
 	if(fileId>0)
 	{
 		fileSize = GetFileSize(fileId);
@@ -123,20 +127,18 @@ void SD_PrepareSound(int which)
 boolean
 SD_PlaySound(int sound)
 {
+//slPrint("SD_PlaySound",slLocate(10,9));		
+//slPrintHex(sound,slLocate(24,9));		
 #ifdef PONY
 #ifndef USE_ADX	
     if(Mix_PlayChannel(DigiMap[sound], NULL, 0) == -1)
 #else
-    if(Mix_PlayChannel(sound, NULL, 0) == -1)
+    return Mix_PlayChannel(sound, NULL, 0);
 #endif
 #else
 	Mix_Chunk *sample = SoundChunks[DigiMap[sound]];	 //DigiMap[sound]
     if(Mix_PlayChannel(0, sample, 0) == -1)
 #endif	
-    {
-        return false;
-    }
-	return true;
 }
 word
 SD_SoundPlaying(void)

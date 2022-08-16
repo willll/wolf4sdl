@@ -503,7 +503,7 @@ void SetupGameLevel (void)
     word *map;
     word tile;
 
-	slIntFunction(VblIn) ;
+//	slIntFunction(VblIn) ; // enlevé et mis au boot
 
     //if (!loadedgame)
     {

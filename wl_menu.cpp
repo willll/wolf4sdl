@@ -824,7 +824,7 @@ CP_NewGame (int)
 // VBT plante ici pour les niveaux suivants
                 if (!EpisodeSelect[which / 2])
                 {
-  			//slPrint("SD_PlaySound",slLocate(10,9))	;
+ // 			slPrint("SD_PlaySound",slLocate(10,9))	;
                     SD_PlaySound (NOWAYSND);
                     Message ("Please select \"Read This!\"\n"
                              "from the Options menu to\n"

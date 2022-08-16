@@ -89,7 +89,7 @@ extern int min_wallheight;
 #endif
 //extern int nb_unlock;
 
-void VblIn(void);
+//extern "C" void VblIn(void);
 
 void VblIn(void)
 {
@@ -952,7 +952,7 @@ void InitDigiMap (void)
         DigiMap[map[0]] = map[1];
     }
 #endif	
-    for (int i = 0; i<47; i++)
+    for (int i = 0; i<73; i++)
     {
         SD_PrepareSound(i);
     }
@@ -1154,7 +1154,7 @@ static void InitGame()
 	SDL_SetVideoMode  (screenWidth, screenHeight, screenBits, NULL);
 	SDL_Init(SDL_INIT_AUDIO);
 //#ifndef REMDEBUG
-	slIntFunction(VblIn) ;
+//	slIntFunction(VblIn) ;
 //#endif
 //    atexit(SDL_Quit);
     SignonScreen ();
@@ -1192,10 +1192,10 @@ static void InitGame()
     // TODO: Will any memory checking be needed someday??
 //
 // build some tables
-////slPrint((char *)"InitDigiMap     ",slLocate(10,12));
+//slPrint((char *)"InitDigiMap     ",slLocate(10,12));
     InitDigiMap ();
 	viewsize = 19;                          // start with a good size
-
+slIntFunction(VblIn) ;
 //    SetupSaveGames();
 
 //
