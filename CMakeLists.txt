@@ -96,7 +96,7 @@ target_link_options(${TARGET_NAME}.elf PUBLIC
 #    "SHELL:-lc -lgcc"
 )
 
-target_link_libraries(${TARGET_NAME}.elf PUBLIC ${JOSGL}/LIBSGL.A )
+target_link_libraries(${TARGET_NAME}.elf PUBLIC ${PROJECT_SOURCE_DIR}/libsgl_real_elf.a )
 #target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGASGL}/lib/libsgl.a )
 target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_scl.a )
 target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_mth.a )
