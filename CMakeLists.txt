@@ -10,8 +10,6 @@ set(CMAKE_STATIC_LIBRARY_PREFIX "")
 
 set(SEGALIB $ENV{SATURN_SBL}/segalib)
 set(SEGASGL $ENV{SATURN_SGL})
-set(JOSGL $ENV{SATURN_JOENGINE}/common/SGL_302j/LIB_ELF)
-set(JOSGL_INC $ENV{SATURN_JOENGINE}/common/SGL_302j/INC)
 
 set(SATURN_COMMON $ENV{SATURN_COMMON})
 set(SATURN_CMAKE $ENV{SATURN_CMAKE})
@@ -34,7 +32,8 @@ set(cxx_flags
         -fno-builtin -funit-at-a-time
         -Wl,--strip-all -Wl,--verbose -mno-fsrra
         -maccumulate-outgoing-args -fomit-frame-pointer
-        -fno-rtti -fno-exceptions
+        -fno-rtti
+        -fno-exceptions
         -fno-common
         -c
          )
@@ -79,7 +78,7 @@ target_include_directories(
     src
     sdl
     ${SEGALIB}/include
-    ${JOSGL_INC}
+    ${SEGASGL}/include
     )
 
 target_compile_options(${TARGET_NAME}.elf PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${cxx_flags}>
