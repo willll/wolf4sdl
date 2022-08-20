@@ -153,10 +153,10 @@ int     numEpisodesMissing = 0;
 char extension[5]; // Need a string, not constant to change cache files
 //char graphext[5];
 //char audioext[5];
-static const char gheadname[] = "vgahead.";
-static const char gfilename[] = "vgagraph.";
-static const char gdictname[] = "vgadict.";
-static const char mheadname[] = "maphead.";
+static const char gheadname[] = "VGAHEAD.";
+static const char gfilename[] = "VGAGRAPH.";
+static const char gdictname[] = "VGADICT.";
+static const char mheadname[] = "MAPHEAD.";
 //static const char mfilename[] = "maptemp.";
 //static const char aheadname[] = "audiohed.";
 //static const char afilename[] = "audiot.";
@@ -484,13 +484,6 @@ void CAL_SetupGrFile (void)
     strcpy(fname,gdictname);
     strcat(fname,extension);
 
-	while (fname[j])
-	{
-		fname[j]= toupper(fname[j]);
-		j++;
-	}
-//	i=0;
-
     //handle = open(fname, O_RDONLY | O_BINARY);
     //if (handle == -1)
 //	if(stat(fname, NULL))
@@ -519,13 +512,6 @@ void CAL_SetupGrFile (void)
     // load the data offsets from ???head.ext
     strcpy(fname,gheadname);
     strcat(fname,extension);
-
-	while (fname[j])
-	{
-		fname[j]= toupper(fname[j]);
-		j++;
-	}
-	j=0;
 
     //handle = open(fname, O_RDONLY | O_BINARY);
     //if (handle == -1)
@@ -578,13 +564,6 @@ void CAL_SetupGrFile (void)
 //
     strcpy(fname,gfilename);
     strcat(fname,extension);
-
-	while (fname[j])
-	{
-		fname[j]= toupper(fname[j]);
-		j++;
-	}
-	j=0;
 
     //grhandle = open(fname, O_RDONLY | O_BINARY);
     //if (grhandle == -1)
@@ -746,7 +725,7 @@ void CAL_SetupMapFile (void)
 */
 long CAL_SetupMapFile (int mapnum)
 {
-    int     i,j;
+    int     i;
     int32_t length,pos;
     char fname[13];
 	long fileSize;
@@ -759,12 +738,7 @@ long CAL_SetupMapFile (int mapnum)
 
 	Sint32 fileId;
 	i=0;
-	while (fname[i])
-	{
-		fname[i]= toupper(fname[i]);
-		i++;
-	}	 
-	i=0;
+
 	fileId = GFS_NameToId((Sint8*)fname);
 //	fileSize = GetFileSize(fileId); // utile
     length = NUMMAPS*4+2; // used to be "filelength(handle);"
@@ -781,14 +755,9 @@ long CAL_SetupMapFile (int mapnum)
 // open the data file
 //
 #ifdef CARMACIZED
-    strcpy(fname, "gamemaps.");
+    strcpy(fname, "GAMEMAPS.");
     strcat(fname, extension);
 
-	while (fname[i])
-	{
-		fname[i]= toupper(fname[i]);
-		i++;
-	}	 
 	maphandle = GFS_NameToId((Sint8*)fname);
 	fileSize = GetFileSize(maphandle);
 #else
@@ -842,6 +811,7 @@ long CAL_SetupMapFile (int mapnum)
 		mapheaderseg.planelength[i]=SWAP_BYTES_16(mapheaderseg.planelength[i]);		
 //		mapsegs[i]=(word *)SATURN_MAPSEG_ADDR+(0x2000*i);
 		if(mapsegs[i]==NULL) mapsegs[i]=(word *) malloc(maparea*2);
+		memset(mapsegs[i],0x00,maparea*2);
 //		mapsegs[i]=(word *) malloc(maparea*2);
     }
 	mapheaderseg.width=SWAP_BYTES_16(mapheaderseg.width);

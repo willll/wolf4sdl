@@ -344,6 +344,7 @@ typedef enum
 
 enum
 {
+
     SPR_DEMO,
 #ifndef APOGEE_1_0
     SPR_DEATHCAM,
@@ -660,7 +661,9 @@ enum
     SPR_MACHINEGUNATK4,
 
     SPR_CHAINREADY,SPR_CHAINATK1,SPR_CHAINATK2,SPR_CHAINATK3,
-    SPR_CHAINATK4, SPR_NULLSPRITE
+    SPR_CHAINATK4,
+
+ SPR_NULLSPRITE
 // vbt ajout, vient de wolf32x
 };
 // vbt ajout, vient de wolf32x

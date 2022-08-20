@@ -16,7 +16,7 @@ RM = rm
 
 # directory
 SGLDIR = C:/SaturnOrbit/SGL_302j
-SGLIDR = $(SGLDIR)/inc
+SGLIDR = $(SGLDIR)/inc320
 SGLLDR = $(SGLDIR)/lib_elf
 
 CMNDIR = l:/saturn/dev/wolf3ddma/root # C:/SaturnOrbit/COMMON
