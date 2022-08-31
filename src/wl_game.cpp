@@ -1,5 +1,5 @@
 // WL_GAME.C
-#define USE_SPRITES 1
+//#define USE_SPRITES 1
 #include <math.h>
 #include "wl_def.h"
 //#include <SDL_mixer.h>
@@ -503,8 +503,6 @@ void SetupGameLevel (void)
     word *map;
     word tile;
 
-//	slIntFunction(VblIn) ; // enlevé et mis au boot
-
     //if (!loadedgame)
     {
         gamestate.TimeCount
@@ -545,6 +543,11 @@ void SetupGameLevel (void)
 //
     memset (tilemap,0,sizeof(tilemap));
     memset (actorat,0,sizeof(actorat));
+	memset(objactor, 0, sizeof(objactor));	
+
+	InitActorList();	/* start spawning things with a clean slate */
+	InitDoorList();
+	InitStaticList();
 	
     map = mapsegs[0];
     for (y=0;y<mapheight;y++)
