@@ -474,7 +474,7 @@ US_ControlPanel (ScanCode scancode)
 	curSurface = screen;
 	VL_BarScaledCoord (viewscreenx,viewscreeny,viewwidth,viewheight,0);
 	curSurface = screenBuffer;
-	VL_BarScaledCoord (viewscreenx,viewscreeny,viewwidth,viewheight,0); // vbt nettoie l'écran, à mettre en sortant du resize	
+	VL_BarScaledCoord (viewscreenx,viewscreeny,viewwidth,viewheight,0); // vbt nettoie l'?cran, ? mettre en sortant du resize	
 #ifdef SPEAR
     UnCacheLump (OPTIONS_LUMP_START, OPTIONS_LUMP_END);
 #endif
@@ -824,7 +824,7 @@ CP_NewGame (int)
 // VBT plante ici pour les niveaux suivants
                 if (!EpisodeSelect[which / 2])
                 {
- // 			slPrint("SD_PlaySound",slLocate(10,9))	;
+  			//slPrint("SD_PlaySound",slLocate(10,9))	;
                     SD_PlaySound (NOWAYSND);
                     Message ("Please select \"Read This!\"\n"
                              "from the Options menu to\n"
@@ -1308,7 +1308,7 @@ HandleMenu (CP_iteminfo * item_i, CP_itemtype * items, void (*routine) (int w))
 {
     char key;
     static int redrawitem = 1, lastitem = -1;
-    int i, x, y, basey, exit, which, shape;
+    int x, y, basey, exit, which, shape;
     int32_t lastBlinkTime, timer;
     ControlInfo ci;
 
@@ -2006,13 +2006,13 @@ ShootSnd (void)
 int stat(const char *_path, struct stat *_sbuf)
 {
 	char path[15];
-	unsigned int i=0;
+//	unsigned int i=0;
 	strcpy(path,_path);
-	while (path[i])
+	/*while (path[i])
 	{
 		path[i]= toupper(path[i]);
 		i++;
-	}
+	}*/
 	return !(GFS_NameToId((signed char *)path));
 }
 
