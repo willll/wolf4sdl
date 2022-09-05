@@ -307,9 +307,9 @@ inline void loadActorTexture(int texture,unsigned int height,unsigned char *surf
 {
 	
 	TEXTURE *txptr = &tex_spr[SATURN_WIDTH+1+texture];
-#if 1
-	slPrintHex(texture,slLocate(10,18));
-	slPrintHex(position_vram,slLocate(10,19));
+
+//	slPrintHex(texture,slLocate(10,18));
+	slPrintHex(position_vram+cgaddress,slLocate(10,19));
 //if (position_vram<0x36000)
 {
 	*txptr = TEXDEF(64, (height>>6), position_vram);
@@ -320,15 +320,6 @@ inline void loadActorTexture(int texture,unsigned int height,unsigned char *surf
 	position_vram+=height;	
 //	position_vram+=0x800;
 }
-#else	
-	*txptr = TEXDEF(64, 64, position_vram);
-	memcpyl((void *)(SpriteVRAM + ((txptr->CGadr) << 3)),(void *)PM_GetSprite(texture),0x1000);
-//	slDMACopy((void *)pic_spr.pcsrc,		(void *)(SpriteVRAM + ((txptr->CGadr) << 3)),		(Uint32)((txptr->Hsize * txptr->Vsize * 4) >> (pic_spr.cmode)));
-//	slDMACopy((void *)pic_spr.pcsrc,		(void *)(SpriteVRAM + ((txptr->CGadr) << 3)),		(Uint32)((txptr->Hsize * txptr->Vsize * 4) >> (pic_spr.cmode)));
-	texture_list[texture]=position_vram/0x800;
-	position_vram+=0x800;	
-#endif
-
 //	slDMAWait();
 }
 #endif
@@ -363,7 +354,7 @@ void ScalePost(int postx, int texture, byte *postsource, byte *tilemapaddr, ray_
 		user_wall->CTRL=FUNC_Texture | _ZmCC;
 		user_wall->PMOD=CL256Bnk | ECdis | SPdis | 0x0800; // sans transparence
 
-		user_wall->SRCA=0x2000|(postx*8);
+		user_wall->SRCA=cgaddress8|(postx*8);
 		user_wall->COLR=256;
 		user_wall->SIZE=0x801;
 		
@@ -688,7 +679,7 @@ void SimpleScaleShape (byte *vbuf, int xcenter, int shapenum, unsigned height,un
     SPRITE user_sprite;
     user_sprite.CTRL = FUNC_Sprite | _ZmCC;
     user_sprite.PMOD=CL256Bnk| ECdis | 0x0800;// | ECenb | SPdis;  // pas besoin pour les sprites
-    user_sprite.SRCA=0x2000|(SATURN_WIDTH*8);
+    user_sprite.SRCA=cgaddress8|(SATURN_WIDTH*8);
     user_sprite.COLR=256;
     user_sprite.SIZE=0x800+height;
 	user_sprite.XA=(xcenter-centerx);
@@ -1761,11 +1752,10 @@ void    ThreeDRefresh (void)
 			slSetSprite(user_wall++, toFIXED(SATURN_SORT_VALUE-depth));	// à remettre // murs
 		}
 		
-		if(position_vram>0x4C000)
+		if(position_vram>0x3C000)
 		{
 			memset(texture_list,0x00,SPR_NULLSPRITE);
-//			position_vram = (SATURN_WIDTH+64)*32+static_items*0x800;
-			position_vram = (SATURN_WIDTH+64)*32;
+			position_vram = (SATURN_WIDTH+64)*64;
 		}
 //		slDMAWait();
 #else
