@@ -14,7 +14,7 @@ extern fixed MTH_Atan(fixed y, fixed x);
 short atan2fix(fixed x, fixed y);
 
 #ifdef USE_SPRITES
-unsigned int position_vram=((SATURN_WIDTH+64)*32);
+unsigned int position_vram=((SATURN_WIDTH+64)*64);
 //unsigned int static_items=0;
 extern unsigned char wall_buffer[(SATURN_WIDTH+64)*64];
 extern TEXTURE tex_spr[SPR_NULLSPRITE+SATURN_WIDTH];
@@ -560,7 +560,6 @@ void SetupGameLevel (void)
                 // solid wall
                 tilemap[x][y] = (byte) tile;
 #ifdef EMBEDDED
-//				actorat[x][y] = tile;
 				set_wall_at(x, y, tile);
 #else
                 actorat[x][y] = (objtype *)(uintptr_t) tile;
@@ -570,17 +569,15 @@ void SetupGameLevel (void)
             {
                 // area floor
                 tilemap[x][y] = 0;
+#ifndef EMBEDDED				
                 actorat[x][y] = 0;
+#endif				
             }
         }
     }
 //
 // spawn doors
 //
-    InitActorList ();                       // start spawning things with a clean slate
-    InitDoorList ();
-    InitStaticList ();
-
     map = mapsegs[0];
     for (y=0;y<mapheight;y++)
     {
@@ -615,8 +612,8 @@ void SetupGameLevel (void)
     }
 // vbt : on recharge la vram
 #ifdef USE_SPRITES
-	memset(texture_list,0xff,SPR_NULLSPRITE);
-	position_vram=(SATURN_WIDTH+64)*32;
+	memset(texture_list,0x00,SPR_NULLSPRITE);
+	position_vram = (SATURN_WIDTH+64)*64;
 
 	if(viewheight == screenHeight)
 		VL_ClearScreen(0);	
