@@ -1752,7 +1752,7 @@ void    ThreeDRefresh (void)
 			slSetSprite(user_wall++, toFIXED(SATURN_SORT_VALUE-depth));	// à remettre // murs
 		}
 		
-		if(position_vram>0x3C000)
+		if(position_vram>0x77000)
 		{
 			memset(texture_list,0x00,SPR_NULLSPRITE);
 			position_vram = (SATURN_WIDTH+64)*64;
