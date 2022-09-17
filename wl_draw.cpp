@@ -664,13 +664,25 @@ void SimpleScaleShape (byte *vbuf, int xcenter, int shapenum, unsigned height,un
 #ifdef USE_SPRITES	
 ////slPrintHex(shapenum,slLocate(10,4));
 
+/*
+	TEXTURE *txptr = &tex_spr[SATURN_WIDTH+2+shapenum]; 
+// correct on touche pas		
+    SPRITE user_sprite;
+    user_sprite.CTRL = FUNC_Sprite | _ZmCC;
+    user_sprite.PMOD=CL256Bnk| ECdis;// | ECenb | SPdis;  // pas besoin pour les sprites
+    user_sprite.SRCA=((txptr->CGadr));
+*/
+
 	unsigned char *surfacePtr = (unsigned char*)PM_GetSprite(shapenum);
 	unsigned char *nextSurfacePtr = (unsigned char*)PM_GetSprite(shapenum+1);
 	int height=(nextSurfacePtr-surfacePtr);
 		
+//TEXTURE *txptr = &tex_spr[SATURN_WIDTH+1];
+		
 	if (old_texture!=shapenum)
 	{
-		memcpy((void *)(wall_buffer + (SATURN_WIDTH<<6)),(void *)surfacePtr,height);
+//		*txptr = TEXDEF(64, (height>>6), (SATURN_WIDTH+1)*64);
+		memcpy((void *)(wall_buffer + ((SATURN_WIDTH+1)<<6)),(void *)surfacePtr,height);
 		old_texture=shapenum;
 	}
 	height>>=6;
@@ -679,7 +691,8 @@ void SimpleScaleShape (byte *vbuf, int xcenter, int shapenum, unsigned height,un
     SPRITE user_sprite;
     user_sprite.CTRL = FUNC_Sprite | _ZmCC;
     user_sprite.PMOD=CL256Bnk| ECdis | 0x0800;// | ECenb | SPdis;  // pas besoin pour les sprites
-    user_sprite.SRCA=cgaddress8|(SATURN_WIDTH*8);
+//    user_sprite.SRCA==((txptr->CGadr)); //cgaddress8|(SATURN_WIDTH*8);
+    user_sprite.SRCA=cgaddress8+0xB08;//cgaddress8|((SATURN_WIDTH+1)*8);
     user_sprite.COLR=256;
     user_sprite.SIZE=0x800+height;
 	user_sprite.XA=(xcenter-centerx);
