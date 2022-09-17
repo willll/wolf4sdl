@@ -9,6 +9,9 @@
 #*.a
 *.lib
 
+# WAV files
+/root/wav/*.wav
+
 # Executables
 *.bin
 /cmake-build-debug/

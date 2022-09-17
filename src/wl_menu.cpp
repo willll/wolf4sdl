@@ -474,11 +474,7 @@ US_ControlPanel (ScanCode scancode)
 	curSurface = screen;
 	VL_BarScaledCoord (viewscreenx,viewscreeny,viewwidth,viewheight,0);
 	curSurface = screenBuffer;
-<<<<<<< HEAD:src/wl_menu.cpp
-	VL_BarScaledCoord (viewscreenx,viewscreeny,viewwidth,viewheight,0); // vbt nettoie l'�cran, � mettre en sortant du resize
-=======
-	VL_BarScaledCoord (viewscreenx,viewscreeny,viewwidth,viewheight,0); // vbt nettoie l'?cran, ? mettre en sortant du resize	
->>>>>>> 93b6d561db47525a8261990bec7f5faabebc87bc:wl_menu.cpp
+	VL_BarScaledCoord (viewscreenx,viewscreeny,viewwidth,viewheight,0); // vbt nettoie l'?cran, ? mettre en sortant du resize
 #ifdef SPEAR
     UnCacheLump (OPTIONS_LUMP_START, OPTIONS_LUMP_END);
 #endif

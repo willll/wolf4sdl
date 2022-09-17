@@ -92,11 +92,9 @@ target_link_options(${TARGET_NAME}.elf PUBLIC
     "SHELL:-m2 -nostartfiles"
     "SHELL:-T ${PROJECT_SOURCE_DIR}/root/sl.lnk"
     "SHELL:-Xlinker -e -Xlinker ___Start -Xlinker -S -nostartfiles"
-#    "SHELL:-lc -lgcc"
 )
 
-target_link_libraries(${TARGET_NAME}.elf PUBLIC ${PROJECT_SOURCE_DIR}/libsgl_real_elf.a )
-#target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGASGL}/lib/libsgl.a )
+target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGASGL}/lib/libsgl.a )
 target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_scl.a )
 target_link_libraries(${TARGET_NAME}.elf PUBLIC ${SEGALIB}/lib/sega_mth.a )
 
@@ -144,17 +142,20 @@ install(FILES ${PROJECT_SOURCE_DIR}/FILES.txt
 install(FILES ${PROJECT_SOURCE_DIR}/EXCLUDE.txt
             DESTINATION ${PROJECT_SOURCE_DIR}/CD )
 
+install(FILES ${PROJECT_SOURCE_DIR}/TRCKwolf.CUE
+            DESTINATION ${PROJECT_SOURCE_DIR}/CD )
+
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/root
             DESTINATION ${PROJECT_SOURCE_DIR}/CD
             PATTERN "sndw/*.pcm" EXCLUDE
             PATTERN "sndw/*.wav" EXCLUDE
+            PATTERN "wav/*.wav" EXCLUDE
             )
 
-#list(TRANSFORM CD_FILES PREPEND "${PROJECT_SOURCE_DIR}/CD/" )
-#list(TRANSFORM CD_FILES APPEND "\\n" )
-
-#set (filename ${PROJECT_SOURCE_DIR}/CD/FILES.txt)
-#install(CODE "file(WRITE ${filename} ${CD_FILES})")
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/root/wav/
+            DESTINATION ${PROJECT_SOURCE_DIR}/CD
+            FILES_MATCHING PATTERN "*.wav"
+            )
 
 set(MAKE_CMD $ENV{SATURN_CD}/mkisofs -v -sysid "\"SEGA SEGASATURN\"" -volid "WOLF3D"
                     -volset "WOLF3D" -publisher "VBT"
