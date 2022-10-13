@@ -1131,7 +1131,30 @@ DrawChangeView (int view)
 #endif
 #ifndef USE_SPRITES
     VW_UpdateScreen ();
+<<<<<<< HEAD:src/wl_menu.cpp
 #endif
+=======
+#else
+	//viewsize = view;
+/*
+	NewViewSize (view);
+//	ThreeDRefresh();
+//
+
+//	DrawScaleds();
+//		slTransferEntry((void *)wall_buffer,(void *)(SpriteVRAM + cgaddress),(SATURN_WIDTH+64) * 64);
+ 
+ extern SPRITE user_walls[120];
+		SPRITE *user_wall = user_walls;
+
+		for(unsigned int pixx=0;pixx<=80;pixx++)
+		{
+			int depth = (user_wall->YB+user_wall->YC)/2;
+			slSetSprite(user_wall++, toFIXED(SATURN_SORT_VALUE-depth));	// à remettre // murs
+		}
+	slSynch();*/
+#endif	
+>>>>>>> 1847bf1b0b873f11b750638d6ad88d8183c599e3:wl_menu.cpp
 }
 
 

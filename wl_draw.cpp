@@ -12,7 +12,7 @@ void heapWalk();
 #ifdef USE_SPRITES
 static unsigned char wall_buffer[(SATURN_WIDTH+64)*64];
 
-static SPRITE user_walls[120];
+ SPRITE user_walls[120];
 extern 	TEXTURE tex_spr[SPR_NULLSPRITE+SATURN_WIDTH];
 extern unsigned char texture_list[SPR_NULLSPRITE];
 extern unsigned int position_vram;
@@ -306,6 +306,7 @@ TEXTURE tex_spr[SPR_NULLSPRITE+SATURN_WIDTH];
 inline void loadActorTexture(int texture,unsigned int height,unsigned char *surfacePtr)
 {
 	
+//	TEXTURE *txptr = &tex_spr[SATURN_WIDTH+1+texture];
 	TEXTURE *txptr = &tex_spr[SATURN_WIDTH+1+texture];
 
 //	slPrintHex(texture,slLocate(10,18));
@@ -488,6 +489,9 @@ void VGAClearScreen () // vbt : fond d'écran 2 barres grises
 #endif
 
 #else
+	
+//if(viewsize!=-1)
+{
 //	extern byte vgaCeiling[];
 	extern SDL_Color curpal[256];
 	unsigned char y;
@@ -528,6 +532,8 @@ void VGAClearScreen () // vbt : fond d'écran 2 barres grises
 		*Line_Color_Pal0++ = start;
 	
 	slBackColTable((void *)LINE_COLOR_TABLE);
+//	viewsize=-1;
+}	
 #endif
 }
 
@@ -652,7 +658,16 @@ inline void ScaleShape (int xcenter, int shapenum, unsigned width)
             }
         }
     }
-#endif	
+#endif
+/*
+	if(shapenum>=SPR_DOG_W1_1 && shapenum <=SPR_DOG_JUMP3)
+	{
+slPrintHex(shapenum,slLocate(10,4));		
+slPrint("dog found !!!",slLocate(10,5));	
+		slSynch();
+		while(1);
+	}
+*/	
 }
 #ifdef USE_SPRITES
 int old_texture = -1;
@@ -1293,7 +1308,7 @@ static unsigned int AsmRefresh(int midangle)
 	my_ray.tilehit = NULL;
 
 #ifdef USE_SLAVE
-for (int postx = 0; postx < (viewwidth/2); postx++) 
+for (int postx = 0; postx < (viewwidth/2)+28; postx++) 
 //for (int postx = 0; postx < (viewwidth); postx++) 
 #else
 for (int postx = 0; postx < viewwidth; postx++) 
@@ -1490,7 +1505,7 @@ static void AsmRefreshSlave(int *midangle)
 	my_ray.id = 59;
 	my_ray.texture = -1;
 	
-for(int postx=viewwidth>>1;postx<viewwidth;postx++)
+for(int postx=(viewwidth>>1)+28;postx<viewwidth;postx++)
 {
 	angle = *midangle + pixelangle[postx];
 
