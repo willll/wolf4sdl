@@ -474,7 +474,7 @@ US_ControlPanel (ScanCode scancode)
 	curSurface = screen;
 	VL_BarScaledCoord (viewscreenx,viewscreeny,viewwidth,viewheight,0);
 	curSurface = screenBuffer;
-	VL_BarScaledCoord (viewscreenx,viewscreeny,viewwidth,viewheight,0); // vbt nettoie l'?cran, ? mettre en sortant du resize
+	VL_BarScaledCoord (viewscreenx,viewscreeny,viewwidth,viewheight,0); // vbt nettoie l'ï¿½cran, ï¿½ mettre en sortant du resize
 #ifdef SPEAR
     UnCacheLump (OPTIONS_LUMP_START, OPTIONS_LUMP_END);
 #endif
@@ -503,9 +503,9 @@ DrawMainMenu (void)
 #else
     ClearMScreen ();
 
-    VWB_DrawPic (112+SATURN_ADJUST, 184, C_MOUSELBACKPIC);
+    VWB_DrawPic (112, 184, C_MOUSELBACKPIC);
     DrawStripes (10);
-    VWB_DrawPic (84+SATURN_ADJUST, 0, C_OPTIONSPIC);
+    VWB_DrawPic (84, 0, C_OPTIONSPIC);
 
 #ifdef SPANISH
     DrawWindow (MENU_X - 8, MENU_Y - 3, MENU_W + 8, MENU_H, BKGDCOLOR);
@@ -939,7 +939,7 @@ DrawNewEpisode (void)
     CA_CacheScreen (S_EPISODEPIC);
 #else
     ClearMScreen ();
-    VWB_DrawPic (112+SATURN_ADJUST, 184, C_MOUSELBACKPIC);
+    VWB_DrawPic (112, 184, C_MOUSELBACKPIC);
 
     DrawWindow (NE_X - 4, NE_Y - 4, NE_W + 8, NE_H + 8, BKGDCOLOR);
     SETFONTCOLOR (READHCOLOR, BKGDCOLOR);
@@ -976,7 +976,7 @@ DrawNewGame (void)
     CA_CacheScreen (S_SKILLPIC);
 #else
     ClearMScreen ();
-    VWB_DrawPic (112+SATURN_ADJUST, 184, C_MOUSELBACKPIC);
+    VWB_DrawPic (112, 184, C_MOUSELBACKPIC);
 
     SETFONTCOLOR (READHCOLOR, BKGDCOLOR);
     PrintX = NM_X + 20;
@@ -1131,9 +1131,6 @@ DrawChangeView (int view)
 #endif
 #ifndef USE_SPRITES
     VW_UpdateScreen ();
-<<<<<<< HEAD:src/wl_menu.cpp
-#endif
-=======
 #else
 	//viewsize = view;
 /*
@@ -1143,18 +1140,17 @@ DrawChangeView (int view)
 
 //	DrawScaleds();
 //		slTransferEntry((void *)wall_buffer,(void *)(SpriteVRAM + cgaddress),(SATURN_WIDTH+64) * 64);
- 
+
  extern SPRITE user_walls[120];
 		SPRITE *user_wall = user_walls;
 
 		for(unsigned int pixx=0;pixx<=80;pixx++)
 		{
 			int depth = (user_wall->YB+user_wall->YC)/2;
-			slSetSprite(user_wall++, toFIXED(SATURN_SORT_VALUE-depth));	// à remettre // murs
+			slSetSprite(user_wall++, toFIXED(SATURN_SORT_VALUE-depth));	// ï¿½ remettre // murs
 		}
 	slSynch();*/
-#endif	
->>>>>>> 1847bf1b0b873f11b750638d6ad88d8183c599e3:wl_menu.cpp
+#endif
 }
 
 
@@ -1331,7 +1327,7 @@ HandleMenu (CP_iteminfo * item_i, CP_itemtype * items, void (*routine) (int w))
 {
     char key;
     static int redrawitem = 1, lastitem = -1;
-    int x, y, basey, exit, which, shape;
+    int i, x, y, basey, exit, which, shape;
     int32_t lastBlinkTime, timer;
     ControlInfo ci;
 
@@ -2029,13 +2025,13 @@ ShootSnd (void)
 int stat(const char *_path, struct stat *_sbuf)
 {
 	char path[15];
-//	unsigned int i=0;
+	unsigned int i=0;
 	strcpy(path,_path);
-	/*while (path[i])
+	while (path[i])
 	{
 		path[i]= toupper(path[i]);
 		i++;
-	}*/
+	}
 	return !(GFS_NameToId((signed char *)path));
 }
 

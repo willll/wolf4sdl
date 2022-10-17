@@ -36,32 +36,46 @@ set(cxx_flags
         -fno-exceptions
         -fno-common
         -c
+        -lm
          )
 
 set(SOURCES
   src/low.s
-  src/saturn.cpp
-  src/pcmsys.cpp
-  src/signon.cpp
-  src/workarea.cpp
+
+  #src/fmopl.cpp
   src/id_ca.cpp
   src/id_in.cpp
   src/id_pm.cpp
   src/id_sd.cpp
-  src/id_vl.cpp
-  src/id_vh.cpp
   src/id_us_1.cpp
-  src/wl_agent.cpp
+  src/id_vh.cpp
+  src/id_vl.cpp
+
+  src/pcmsys.cpp
+  src/saturn.cpp
+  #src/sdl_winmain.cpp
+  src/signon.cpp
+
+
   src/wl_act1.cpp
   src/wl_act2.cpp
+  src/wl_agent.cpp
+  #src/wl_atmos.cpp
+  #src/wl_cloudsky.cpp
+  #src/wl_debug.cpp
+  #src/wl_dir3dspr.cpp
   src/wl_draw.cpp
+  #src/wl_floorceiling.cpp
   src/wl_game.cpp
-  src/wl_play.cpp
-  src/wl_menu.cpp
-  src/wl_state.cpp
   src/wl_inter.cpp
-  src/wl_text.cpp
   src/wl_main.cpp
+  src/wl_menu.cpp
+  #src/wl_parallax.cpp
+  src/wl_play.cpp
+  #src/wl_shade.cpp
+  src/wl_state.cpp
+  src/wl_text.cpp
+  src/workarea.cpp
   )
 
 set(CD_FILES

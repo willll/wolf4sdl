@@ -48,8 +48,8 @@ void PM_Startup()
     PMPages = (uint8_t **) malloc((ChunksInFile + 1) * sizeof(uint8_t *));
     CHECKMALLOCRESULT(PMPages);	
 
-	uint32_t* pageOffsets = (uint32_t *)SATURN_CHUNK_ADDR; 
-	word *pageLengths = (word *)SATURN_CHUNK_ADDR+(ChunksInFile + 1) * sizeof(int32_t);
+	uint32_t* pageOffsets = (uint32_t *)saturnChunk; 
+	word *pageLengths = (word *)saturnChunk+(ChunksInFile + 1) * sizeof(int32_t);
  
 	for(i=0;i<ChunksInFile;i++)
 	{
@@ -85,6 +85,7 @@ void PM_Startup()
 	
 	uint8_t *ptr = (uint8_t *)wallData;
 	
+///------------------------ début murs
     for(i = 0; i < NB_WALL_HWRAM; i++)
     {
         PMPages[i] = ptr;
@@ -106,6 +107,8 @@ void PM_Startup()
 		memcpyl(ptr,&Chunks[pageOffsets[i]],0x1000);
 		ptr+=0x1000;
 	}
+///------------------------ fin murs
+	
 	ptr = (uint8_t *)0x00202000;
 	ptr = PM_DecodeSprites2(PMSpriteStart,PMSpriteStart+SPR_NULLSPRITE,ptr,pageOffsets,pageLengths,Chunks);
 
