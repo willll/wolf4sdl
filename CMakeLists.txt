@@ -23,18 +23,29 @@ project( ${TARGET_NAME} VERSION 1.0
 
 set(as_flags )
 set(cxx_flags
-        -O2 -m2 -fpermissive
+        -Os -m2 -fpermissive
         -Wno-conversion-null
-        -Wshadow -Wall -Wswitch -Wpadded
-        -Wextra -Wno-narrowing -Wwrite-strings
-        -fno-web -fno-lto
+        -Wshadow
+        -Wall
+        -Wswitch
+        -Wpadded
+        -Wextra
+        -Wno-narrowing
+        #-Wwrite-strings
+        -Wformat-diag
         -falign-functions=4
-        -fno-builtin -funit-at-a-time
-        -Wl,--strip-all -Wl,--verbose -mno-fsrra
-        -maccumulate-outgoing-args -fomit-frame-pointer
+        -Wl,--strip-all
+        -Wl,--verbose
+        -mno-fsrra
+        -maccumulate-outgoing-args
+        -fomit-frame-pointer
+        -funit-at-a-time
         -fno-rtti
+        -fno-web
+        -fno-lto
         -fno-exceptions
         -fno-common
+        -fno-builtin
         -c
         -lm
          )
@@ -55,7 +66,6 @@ set(SOURCES
   src/saturn.cpp
   #src/sdl_winmain.cpp
   src/signon.cpp
-
 
   src/wl_act1.cpp
   src/wl_act2.cpp
@@ -183,4 +193,4 @@ set(MAKE_CMD $ENV{SATURN_CD}/mkisofs -v -sysid "\"SEGA SEGASATURN\"" -volid "WOL
 
 install(CODE "execute_process(COMMAND
                                ${MAKE_CMD}
-                               WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/CD) ")
+                               WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/CD)")
