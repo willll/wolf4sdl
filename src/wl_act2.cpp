@@ -906,10 +906,6 @@ boolean ProjectileTryMove(objtype *ob)
 =
 =================
 */
-//long int labs(long int x);
-#undef labs
-#define labs(x)         ((int32_t)(x)>0?(x):-(x))
-
 
 void T_Projectile(objtype *ob)
 {

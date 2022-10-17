@@ -140,8 +140,6 @@ extern  void    SD_StopSound(void),
                 SD_WaitSoundDone(void);
 
 extern  void    SD_StartMusic(int chunk);
-extern "C" void	satPlayMusic( Uint8 track );
-//#define SD_StartMusic(chunk) satPlayMusic(chunk)
 extern  void    SD_ContinueMusic(int chunk, int startoffs);
 extern  void    SD_MusicOn(void),
                 SD_FadeOutMusic(void);

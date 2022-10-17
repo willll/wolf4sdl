@@ -21,15 +21,10 @@
 //
 
 #include "wl_def.h"
-extern "C"
-{
 #include <stdlib.h>
-#include <string.h>
+//#include <string.h>
 char 	*strdup (const char *) __malloc_like __result_use_check;
-#if _MSC_VER == 1200            // Visual C++ 6
-	#define vsnprintf _vsnprintf
-#endif
-}
+
 //	Global variables
 		word		PrintX,PrintY;
 		word		WindowX,WindowY,WindowW,WindowH;
@@ -78,6 +73,23 @@ static byte rndtable[] = {
 	120, 163, 236, 249 };
 
 //	Internal routines
+// SOurce : https://stackoverflow.com/a/37132824/420446
+char *ft_strdup(char *src)
+{
+    char *str;
+    char *p;
+    int len = 0;
+
+    while (src[len])
+        len++;
+    str = malloc(len + 1);
+    p = str;
+    while (*src)
+        *p++ = *src++;
+    *p = '\0';
+    return str;
+}
+
 
 //	Public routines
 
@@ -121,7 +133,7 @@ void
 US_Print(const char *sorg)
 {
 	char c;
-	char *sstart = strdup(sorg);
+	char *sstart = ft_strdup(sorg);
 	char *s = sstart;
 	char *se;
 	word w,h;
@@ -187,7 +199,7 @@ void
 US_CPrint(const char *sorg)
 {
 	char	c;
-	char *sstart = strdup(sorg);
+	char *sstart = ft_strdup(sorg);
 	char *s = sstart;
 	char *se;
 

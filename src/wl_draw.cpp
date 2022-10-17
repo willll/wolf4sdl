@@ -2,7 +2,7 @@
 //#define USE_SPRITES 1
 #include "wl_def.h"
 
-#define USE_SLAVE 1
+//#define USE_SLAVE 1
 
 #include "wl_cloudsky.h"
 #include "wl_atmos.h"
@@ -12,7 +12,7 @@ void heapWalk();
 #ifdef USE_SPRITES
 static unsigned char wall_buffer[(SATURN_WIDTH+64)*64];
 
-static SPRITE user_walls[120];
+ SPRITE user_walls[MAX_WALLS];
 extern 	TEXTURE tex_spr[SPR_NULLSPRITE+SATURN_WIDTH];
 extern unsigned char texture_list[SPR_NULLSPRITE];
 extern unsigned int position_vram;
@@ -305,20 +305,22 @@ TEXTURE tex_spr[SPR_NULLSPRITE+SATURN_WIDTH];
 
 inline void loadActorTexture(int texture,unsigned int height,unsigned char *surfacePtr)
 {
+	
+//	TEXTURE *txptr = &tex_spr[SATURN_WIDTH+1+texture];
 	TEXTURE *txptr = &tex_spr[SATURN_WIDTH+1+texture];
-#if 1
+
+//	slPrintHex(texture,slLocate(10,18));
+	slPrintHex(position_vram+cgaddress,slLocate(10,19));
+//if (position_vram<0x36000)
+{
 	*txptr = TEXDEF(64, (height>>6), position_vram);
 	memcpy((void *)(SpriteVRAM + ((txptr->CGadr) << 3)),(void *)surfacePtr,height);
-	texture_list[texture]=position_vram/height/2;
-	position_vram+=height/2;	
-#else	
-	*txptr = TEXDEF(64, 64, position_vram);
-	memcpyl((void *)(SpriteVRAM + ((txptr->CGadr) << 3)),(void *)PM_GetSprite(texture),0x1000);
-//	slDMACopy((void *)pic_spr.pcsrc,		(void *)(SpriteVRAM + ((txptr->CGadr) << 3)),		(Uint32)((txptr->Hsize * txptr->Vsize * 4) >> (pic_spr.cmode)));
-//	slDMACopy((void *)pic_spr.pcsrc,		(void *)(SpriteVRAM + ((txptr->CGadr) << 3)),		(Uint32)((txptr->Hsize * txptr->Vsize * 4) >> (pic_spr.cmode)));
-	texture_list[texture]=position_vram/0x800;
-	position_vram+=0x800;	
-#endif
+//	memset((void *)(SpriteVRAM + ((txptr->CGadr) << 3)),texture,height);
+	texture_list[texture]=1;//position_vram/height/2;
+//	position_vram+=height/2;	
+	position_vram+=height;	
+//	position_vram+=0x800;
+}
 //	slDMAWait();
 }
 #endif
@@ -353,7 +355,7 @@ void ScalePost(int postx, int texture, byte *postsource, byte *tilemapaddr, ray_
 		user_wall->CTRL=FUNC_Texture | _ZmCC;
 		user_wall->PMOD=CL256Bnk | ECdis | SPdis | 0x0800; // sans transparence
 
-		user_wall->SRCA=0x2000|(postx*8);
+		user_wall->SRCA=cgaddress8|(postx*8);
 		user_wall->COLR=256;
 		user_wall->SIZE=0x801;
 		
@@ -487,6 +489,9 @@ void VGAClearScreen () // vbt : fond d'écran 2 barres grises
 #endif
 
 #else
+	
+//if(viewsize!=-1)
+{
 //	extern byte vgaCeiling[];
 	extern SDL_Color curpal[256];
 	unsigned char y;
@@ -527,6 +532,8 @@ void VGAClearScreen () // vbt : fond d'écran 2 barres grises
 		*Line_Color_Pal0++ = start;
 	
 	slBackColTable((void *)LINE_COLOR_TABLE);
+//	viewsize=-1;
+}	
 #endif
 }
 
@@ -547,14 +554,16 @@ inline void ScaleShape (int xcenter, int shapenum, unsigned width)
     if(!scalel) return;   // too close or far away
     pixwidth=scalel*SPRITESCALEFACTOR;
 
-
+//shapenum=SPR_DEMO+1;
 #ifdef USE_SPRITES
 	unsigned char *surfacePtr = (unsigned char*)PM_GetSprite(shapenum); // + ((0) * source->pitch) + 0;
 	unsigned char *nextSurfacePtr = (unsigned char*)PM_GetSprite(shapenum+1);
 	unsigned int height=(nextSurfacePtr-surfacePtr)>>6;
 	
-	if(texture_list[shapenum]==0xff)
+	if(!texture_list[shapenum])
+	{
 		loadActorTexture(shapenum,height<<6,surfacePtr);
+	}
 //--------------------------------------------------------------------------------------------
 	TEXTURE *txptr = &tex_spr[SATURN_WIDTH+1+shapenum]; 
 // correct on touche pas		
@@ -649,7 +658,16 @@ inline void ScaleShape (int xcenter, int shapenum, unsigned width)
             }
         }
     }
-#endif	
+#endif
+/*
+	if(shapenum>=SPR_DOG_W1_1 && shapenum <=SPR_DOG_JUMP3)
+	{
+slPrintHex(shapenum,slLocate(10,4));		
+slPrint("dog found !!!",slLocate(10,5));	
+		slSynch();
+		while(1);
+	}
+*/	
 }
 #ifdef USE_SPRITES
 int old_texture = -1;
@@ -661,13 +679,25 @@ void SimpleScaleShape (byte *vbuf, int xcenter, int shapenum, unsigned height,un
 #ifdef USE_SPRITES	
 ////slPrintHex(shapenum,slLocate(10,4));
 
+/*
+	TEXTURE *txptr = &tex_spr[SATURN_WIDTH+2+shapenum]; 
+// correct on touche pas		
+    SPRITE user_sprite;
+    user_sprite.CTRL = FUNC_Sprite | _ZmCC;
+    user_sprite.PMOD=CL256Bnk| ECdis;// | ECenb | SPdis;  // pas besoin pour les sprites
+    user_sprite.SRCA=((txptr->CGadr));
+*/
+
 	unsigned char *surfacePtr = (unsigned char*)PM_GetSprite(shapenum);
 	unsigned char *nextSurfacePtr = (unsigned char*)PM_GetSprite(shapenum+1);
 	int height=(nextSurfacePtr-surfacePtr);
 		
+//TEXTURE *txptr = &tex_spr[SATURN_WIDTH+1];
+		
 	if (old_texture!=shapenum)
 	{
-		memcpy((void *)(wall_buffer + (SATURN_WIDTH<<6)),(void *)surfacePtr,height);
+//		*txptr = TEXDEF(64, (height>>6), (SATURN_WIDTH+1)*64);
+		memcpy((void *)(wall_buffer + ((SATURN_WIDTH+1)<<6)),(void *)surfacePtr,height);
 		old_texture=shapenum;
 	}
 	height>>=6;
@@ -676,7 +706,8 @@ void SimpleScaleShape (byte *vbuf, int xcenter, int shapenum, unsigned height,un
     SPRITE user_sprite;
     user_sprite.CTRL = FUNC_Sprite | _ZmCC;
     user_sprite.PMOD=CL256Bnk| ECdis | 0x0800;// | ECenb | SPdis;  // pas besoin pour les sprites
-    user_sprite.SRCA=0x2000|(SATURN_WIDTH*8);
+//    user_sprite.SRCA==((txptr->CGadr)); //cgaddress8|(SATURN_WIDTH*8);
+    user_sprite.SRCA=cgaddress8+0xB08;//cgaddress8|((SATURN_WIDTH+1)*8);
     user_sprite.COLR=256;
     user_sprite.SIZE=0x800+height;
 	user_sprite.XA=(xcenter-centerx);
@@ -686,6 +717,7 @@ void SimpleScaleShape (byte *vbuf, int xcenter, int shapenum, unsigned height,un
     user_sprite.GRDA=0;
 	
 	slSetSprite(&user_sprite, toFIXED(10));// à remettre	// arme
+	
 //--------------------------------------------------------------------------------------------	
 #else
 	unsigned pixheight=scale*SPRITESCALEFACTOR;
@@ -1276,7 +1308,7 @@ static unsigned int AsmRefresh(int midangle)
 	my_ray.tilehit = NULL;
 
 #ifdef USE_SLAVE
-for (int postx = 0; postx < (viewwidth/2); postx++) 
+for (int postx = 0; postx < (viewwidth/2)+28; postx++) 
 //for (int postx = 0; postx < (viewwidth); postx++) 
 #else
 for (int postx = 0; postx < viewwidth; postx++) 
@@ -1473,7 +1505,7 @@ static void AsmRefreshSlave(int *midangle)
 	my_ray.id = 59;
 	my_ray.texture = -1;
 	
-for(int postx=viewwidth>>1;postx<viewwidth;postx++)
+for(int postx=(viewwidth>>1)+28;postx<viewwidth;postx++)
 {
 	angle = *midangle + pixelangle[postx];
 
@@ -1748,11 +1780,10 @@ void    ThreeDRefresh (void)
 			slSetSprite(user_wall++, toFIXED(SATURN_SORT_VALUE-depth));	// à remettre // murs
 		}
 		
-		if(position_vram>0x4C000)
+		if(position_vram>0x77000)
 		{
-			memset(texture_list,0xFF,SPR_NULLSPRITE);
-//			position_vram = (SATURN_WIDTH+64)*32+static_items*0x800;
-			position_vram = (SATURN_WIDTH+64)*32;
+			memset(texture_list,0x00,SPR_NULLSPRITE);
+			position_vram = (SATURN_WIDTH+64)*64;
 		}
 //		slDMAWait();
 #else
@@ -1785,12 +1816,12 @@ void    ThreeDRefresh (void)
     }
 #endif
 
-		user_wall = (SPRITE *)user_walls+60;
+		user_wall = (SPRITE *)user_walls+(MAX_WALLS/2);
 		
 //		while(tutu==0);
 		
 		
-		nb=tutu-60;
+		nb=tutu-(MAX_WALLS/2);
 
 		for(unsigned int pixx=0;pixx<=nb;pixx++)
 		{

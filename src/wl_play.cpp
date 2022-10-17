@@ -219,7 +219,7 @@ int songs[] = {
     XFUNKIE_MUS,
     XDEATH_MUS,
     XGETYOU_MUS,                // DON'T KNOW
-    ULTIMATE_MUS,               // Trans Grï¿½sse
+    ULTIMATE_MUS,               // Trans Gr”sse
 
     DUNGEON_MUS,
     GOINGAFT_MUS,
@@ -474,7 +474,7 @@ void CheckKeys (void)
         DrawAmmo ();
         DrawScore ();
 
-
+        
         CA_CacheGrChunk (STARTFONT + 1);
         ClearSplitVWB ();
 
@@ -495,7 +495,7 @@ void CheckKeys (void)
 #ifdef DEBUGKEYS
     if (Keyboard[sc_BackSpace] && Keyboard[sc_LShift] && Keyboard[sc_Alt] && param_debugmode)
     {
-
+        
         CA_CacheGrChunk (STARTFONT + 1);
         ClearSplitVWB ();
 
@@ -514,7 +514,7 @@ void CheckKeys (void)
     //
     if (Keyboard[sc_B] && Keyboard[sc_A] && Keyboard[sc_T])
     {
-
+        
         CA_CacheGrChunk (STARTFONT + 1);
         ClearSplitVWB ();
 
@@ -538,9 +538,9 @@ void CheckKeys (void)
     {
         int lastoffs = StopMusic();
         LatchDrawPic (20 - 4, 80 - 2 * 8, PAUSEDPIC);
-#ifndef USE_SPRITES
+#ifndef USE_SPRITES		
         VH_UpdateScreen();
-#endif
+#endif		
         IN_Ack ();
         Paused = false;
         ContinueMusic(lastoffs);
@@ -559,7 +559,7 @@ void CheckKeys (void)
     {
         short oldmapon = gamestate.mapon;
         short oldepisode = gamestate.episode;
-
+        
         ClearSplitVWB ();
         US_ControlPanel (scan);
 
@@ -574,7 +574,7 @@ void CheckKeys (void)
     if (scan == sc_Escape)
     {
         int lastoffs = StopMusic ();
-
+        
         VW_FadeOut ();
 
         US_ControlPanel (buttonstate[bt_esc] ? sc_Escape : scan);
@@ -888,7 +888,7 @@ void InitRedShifts (void)
             workptr++;
         }
     }
-
+	
 }
 
 
@@ -1272,7 +1272,7 @@ void PlayLoop (void)
 	if (demoplayback)
         IN_StartAck ();
 	UpdatePaletteShifts ();
-
+	
 	DrawStatusBar(); // vbt : ajout
 
     do

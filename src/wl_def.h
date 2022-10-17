@@ -2,7 +2,7 @@
 #define WL_DEF_H
 
 #define USE_SPRITES 1
-#define PONY 1 
+#define PONY 1
 #define USE_ADX 1
 #define USE_SLAVE 1
 //#define USE_HWRAM_CHUNK 1
@@ -17,9 +17,10 @@ extern unsigned char *saturnChunk;
 
 extern "C" {
 #include <malloc.h>
+#include <string.h>
 //#include "C:\vbt\saturn\vbtsh4\toolchain\sh-elf\include\string.h"
 //#include "C:\vbt\saturn\vbtsh4\toolchain\sh-elf\include\stdlib.h"
-
+}
 // Defines which version shall be built and configures supported extra features
 #include "version.h"
 
@@ -29,6 +30,7 @@ extern "C" {
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #if defined(_arch_dreamcast)
 #	include <kos.h>
 #elif !defined(_WIN32)
@@ -36,7 +38,6 @@ extern "C" {
 #	include <string.h>
 #	include <stdarg.h>
 #endif
-}
 #include "sdl/SDL.h"
 
 #if !defined O_BINARY
@@ -346,7 +347,6 @@ typedef enum
 
 enum
 {
-
     SPR_DEMO,
 #ifndef APOGEE_1_0
     SPR_DEATHCAM,
@@ -663,9 +663,7 @@ enum
     SPR_MACHINEGUNATK4,
 
     SPR_CHAINREADY,SPR_CHAINATK1,SPR_CHAINATK2,SPR_CHAINATK3,
-    SPR_CHAINATK4,
-
- SPR_NULLSPRITE
+    SPR_CHAINATK4, SPR_NULLSPRITE
 // vbt ajout, vient de wolf32x
 };
 // vbt ajout, vient de wolf32x
@@ -867,12 +865,12 @@ typedef struct objstruct
     activetype  active:2;
     short       ticcount;
     classtype   obclass:5;
-#ifndef EMBEDDED	
+#ifndef EMBEDDED
     statetype   *state;
 #else
 	int		id;
 	int		state; /* stateenum */
-#endif	
+#endif
     uint32_t    flags;              // FL_SHOOTABLE, etc
 
     int32_t     distance;           // if negative, wait for that door to open
