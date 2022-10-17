@@ -1,7 +1,7 @@
 #include "wl_def.h"
 
 #define LOADADDR 0x00242000
-#define NB_WALL_HWRAM 50
+#define NB_WALL_HWRAM 56
 //#define NB_WALL_HWRAM 39
 
 int PMSpriteStart;
@@ -10,7 +10,7 @@ int PMSpriteStart;
 // ChunksInFile+1 pointers to page starts.
 // The last pointer points one byte after the last page.
 uint8_t **PMPages;
-uint8_t * PM_DecodeSprites2(unsigned int start,unsigned int endi,uint8_t *ptr,uint32_t* pageOffsets,word *pageLengths,Uint8 *Chunks);
+uint8_t * PM_DecodeSprites2(unsigned int start,unsigned int endi,uint32_t* pageOffsets,word *pageLengths,Uint8 *Chunks);
 
 void PM_Startup()
 {
@@ -108,18 +108,19 @@ void PM_Startup()
 		ptr+=0x1000;
 	}
 ///------------------------ fin murs
-	
-	ptr = (uint8_t *)0x00202000;
-	ptr = PM_DecodeSprites2(PMSpriteStart,PMSpriteStart+SPR_NULLSPRITE,ptr,pageOffsets,pageLengths,Chunks);
-
+//slPrint((char *)"PM_DecodeSprites2     ",slLocate(10,12));	
+//	ptr = (uint8_t *)0x00202000;
+//	ptr = PM_DecodeSprites2(PMSpriteStart,PMSpriteStart+SPR_NULLSPRITE,ptr,pageOffsets,pageLengths,Chunks);
+	ptr = PM_DecodeSprites2(PMSpriteStart,PMSpriteStart+SPR_NULLSPRITE,pageOffsets,pageLengths,Chunks);
+//slPrint((char *)"end PM_DecodeSprites2     ",slLocate(10,12));	
     // last page points after page buffer
     PMPages[ChunksInFile] = ptr;
-/*
+
 	int *val = (int *)ptr;
 	
 //	slPrintHex((int)ChunksInFile-PMSpriteStart,slLocate(3,3));	
 	slPrintHex((int)val,slLocate(3,4));
-*/
+
 //	free(pageLengths);
 	pageLengths = NULL;	
 //    free(pageOffsets);
@@ -127,8 +128,11 @@ void PM_Startup()
 	Chunks = NULL;		
 }	
 
-uint8_t * PM_DecodeSprites2(unsigned int start,unsigned int endi,uint8_t *ptr,uint32_t* pageOffsets,word *pageLengths,Uint8 *Chunks)
+uint8_t * PM_DecodeSprites2(unsigned int start,unsigned int endi,uint32_t* pageOffsets,word *pageLengths,Uint8 *Chunks)
 {
+	uint8_t *bmpbuff  = (uint8_t *)0x00202000;
+	uint8_t *ptr      = (uint8_t *)0x00203000;
+	
     for(unsigned int i = start; i < endi; i++)
     {
         PMPages[i] = ptr;
@@ -141,6 +145,9 @@ uint8_t * PM_DecodeSprites2(unsigned int start,unsigned int endi,uint8_t *ptr,ui
         uint32_t size;
         if(!pageOffsets[i + 1]) size = pageLengths[i-PMSpriteStart];
         else size = pageOffsets[i + 1] - pageOffsets[i];
+
+        if(!size)
+            continue;
 
 		int end = size;
 		if (size % 4 != 0)
@@ -159,9 +166,8 @@ uint8_t * PM_DecodeSprites2(unsigned int start,unsigned int endi,uint8_t *ptr,ui
 			shape->dataofs[x]=SWAP_BYTES_16(shape->dataofs[x]);
 		}
 
-		static byte bmpbuff[0x1000];
-		static byte *bmpptr;
-		unsigned short  *cmdptr, *sprdata;
+		byte *bmpptr,*sprdata8;
+		unsigned short  *cmdptr;
 
 		// set the texel index to the first texel
 		unsigned char  *sprptr = (unsigned char  *)shape+(((((shape->rightpix)-(shape->leftpix))+1)*2)+4);
@@ -170,21 +176,25 @@ uint8_t * PM_DecodeSprites2(unsigned int start,unsigned int endi,uint8_t *ptr,ui
 		// setup a pointer to the column offsets	
 		cmdptr = shape->dataofs;
 		int count_00=63;
-
-//if (i>=SPR_SS_PAIN_1 && i<=SPR_SS_SHOOT3)count_00=1;
+//		int count_01=0;
 
 		for (unsigned int x = (shape->leftpix); x <= (shape->rightpix); x++)
 		{
-			sprdata = (unsigned short *)((unsigned char  *)shape+*cmdptr);
-
-			while (SWAP_BYTES_16(*sprdata) != 0)
+			sprdata8 = ((unsigned char  *)shape+*cmdptr);			
+			
+			while ((sprdata8[0]|sprdata8[1]<<8) != 0)
 			{
-				unsigned int min_y=(SWAP_BYTES_16(sprdata[2])/2);
-				if(min_y<count_00)
-					count_00=min_y;
+				for (int y = (sprdata8[4]|sprdata8[5]<<8)/2; y < (sprdata8[0]|sprdata8[1]<<8)/2; y++)
+				{
+					unsigned int min_y=(sprdata8[4]|sprdata8[5]<<8)/2;
+					if(min_y<count_00)
+						count_00=min_y;
 					
-				sprdata += 3;
-			}
+//					if(min_y>count_01)
+//						count_01=min_y;					
+				}
+				sprdata8 += 6;
+			}			
 			cmdptr++;
 		}
 		memset(bmpbuff,0x00,(64-count_00)<<6);
@@ -195,32 +205,23 @@ uint8_t * PM_DecodeSprites2(unsigned int start,unsigned int endi,uint8_t *ptr,ui
 
 		for (int x = (shape->leftpix); x <= (shape->rightpix); x++)
 		{
-			sprdata = (unsigned short *)((unsigned char  *)shape+*cmdptr);
+			byte *sprdata8 = ((unsigned char  *)shape+*cmdptr);
 			bmpptr = (byte *)bmpbuff+x;
-			
-			while (SWAP_BYTES_16(*sprdata) != 0)
+
+			while ((sprdata8[0]|sprdata8[1]<<8) != 0)
 			{
-//				int min_y = SWAP_BYTES_16(sprdata[2])/2;
-//				if (min_y<count_00)
-//					min_y=count_00;
-				
-				for (int y = SWAP_BYTES_16(sprdata[2])/2; y < SWAP_BYTES_16(*sprdata)/2; y++)
+				for (int y = (sprdata8[4]|sprdata8[5]<<8)/2; y < (sprdata8[0]|sprdata8[1]<<8)/2; y++)
+//				for (int y = (sprdata8[4]|sprdata8[5]<<8)/2; y < count_01; y++)
 				{
-/*
-char toto[100];
-sprintf(toto,"%d ",i-PMSpriteStart);
-slPrint(toto,slLocate(5,7));
-*/					
 					bmpptr[(y-count_00)<<6] = *sprptr++;
 					if(bmpptr[(y-count_00)<<6]==0) bmpptr[(y-count_00)<<6]=0xa0;					
 				}
-				sprdata += 3;
+				sprdata8 += 6;
 			}
 			cmdptr++;
 		}
 		memcpyl((void *)ptr,bmpbuff,(64-count_00)<<6);
-		
-		ptr+=((64-count_00)<<6);	
+		ptr+=((64-count_00)<<6);
 	}
 	return ptr;
 }
