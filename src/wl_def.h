@@ -10,8 +10,18 @@
 #define SATURN_WIDTH 352
 #define SATURN_SORT_VALUE 240
 #define MAX_WALLS 120
+#define NB_WALL_HWRAM 50/2
 // 240 pour du 320, 264 pour du 352
-#define		LINE_COLOR_TABLE		(VDP2_VRAM_A0	+ 0x1f400)
+#define	LINE_COLOR_TABLE		(VDP2_VRAM_A0	+ 0x1f400)
+#define PRELOAD_ITEMS(START,STOP) ({\
+int retvalue=0; \
+if(itemmap[START+PMSpriteStart]==0) {\
+for(int i=START;i<=STOP;i++){ \
+itemmap[i+PMSpriteStart]=1;} \
+retvalue=STOP+1-START; \
+} \
+retvalue; \
+})
 
 extern unsigned char *saturnChunk;
 
@@ -352,7 +362,7 @@ enum
     SPR_DEATHCAM,
 #endif
 //
-// static sprites
+// static sprites ok
 //
     SPR_STAT_0,SPR_STAT_1,SPR_STAT_2,SPR_STAT_3,
     SPR_STAT_4,SPR_STAT_5,SPR_STAT_6,SPR_STAT_7,
@@ -377,7 +387,7 @@ enum
 #endif
 
 //
-// guard
+// guard ok
 //
     SPR_GRD_S_1,SPR_GRD_S_2,SPR_GRD_S_3,SPR_GRD_S_4,
     SPR_GRD_S_5,SPR_GRD_S_6,SPR_GRD_S_7,SPR_GRD_S_8,
@@ -400,7 +410,7 @@ enum
     SPR_GRD_SHOOT1,SPR_GRD_SHOOT2,SPR_GRD_SHOOT3,
 
 //
-// dogs
+// dogs ok
 //
     SPR_DOG_W1_1,SPR_DOG_W1_2,SPR_DOG_W1_3,SPR_DOG_W1_4,
     SPR_DOG_W1_5,SPR_DOG_W1_6,SPR_DOG_W1_7,SPR_DOG_W1_8,
@@ -420,7 +430,7 @@ enum
 
 
 //
-// ss
+// ss ok
 //
     SPR_SS_S_1,SPR_SS_S_2,SPR_SS_S_3,SPR_SS_S_4,
     SPR_SS_S_5,SPR_SS_S_6,SPR_SS_S_7,SPR_SS_S_8,
@@ -443,7 +453,7 @@ enum
     SPR_SS_SHOOT1,SPR_SS_SHOOT2,SPR_SS_SHOOT3,
 
 //
-// mutant
+// mutant ok
 //
     SPR_MUT_S_1,SPR_MUT_S_2,SPR_MUT_S_3,SPR_MUT_S_4,
     SPR_MUT_S_5,SPR_MUT_S_6,SPR_MUT_S_7,SPR_MUT_S_8,
@@ -466,7 +476,7 @@ enum
     SPR_MUT_SHOOT1,SPR_MUT_SHOOT2,SPR_MUT_SHOOT3,SPR_MUT_SHOOT4,
 
 //
-// officer
+// officer ok
 //
     SPR_OFC_S_1,SPR_OFC_S_2,SPR_OFC_S_3,SPR_OFC_S_4,
     SPR_OFC_S_5,SPR_OFC_S_6,SPR_OFC_S_7,SPR_OFC_S_8,
@@ -490,13 +500,13 @@ enum
 
 #ifndef SPEAR
 //
-// ghosts
+// ghosts ok
 //
     SPR_BLINKY_W1,SPR_BLINKY_W2,SPR_PINKY_W1,SPR_PINKY_W2,
     SPR_CLYDE_W1,SPR_CLYDE_W2,SPR_INKY_W1,SPR_INKY_W2,
 
 //
-// hans
+// hans ok
 //
     SPR_BOSS_W1,SPR_BOSS_W2,SPR_BOSS_W3,SPR_BOSS_W4,
     SPR_BOSS_SHOOT1,SPR_BOSS_SHOOT2,SPR_BOSS_SHOOT3,SPR_BOSS_DEAD,
@@ -504,7 +514,7 @@ enum
     SPR_BOSS_DIE1,SPR_BOSS_DIE2,SPR_BOSS_DIE3,
 
 //
-// schabbs
+// schabbs ok
 //
     SPR_SCHABB_W1,SPR_SCHABB_W2,SPR_SCHABB_W3,SPR_SCHABB_W4,
     SPR_SCHABB_SHOOT1,SPR_SCHABB_SHOOT2,
@@ -513,7 +523,7 @@ enum
     SPR_HYPO1,SPR_HYPO2,SPR_HYPO3,SPR_HYPO4,
 
 //
-// fake
+// fake ok
 //
     SPR_FAKE_W1,SPR_FAKE_W2,SPR_FAKE_W3,SPR_FAKE_W4,
     SPR_FAKE_SHOOT,SPR_FIRE1,SPR_FIRE2,
@@ -522,7 +532,7 @@ enum
     SPR_FAKE_DIE5,SPR_FAKE_DEAD,
 
 //
-// hitler
+// hitler ok
 //
     SPR_MECHA_W1,SPR_MECHA_W2,SPR_MECHA_W3,SPR_MECHA_W4,
     SPR_MECHA_SHOOT1,SPR_MECHA_SHOOT2,SPR_MECHA_SHOOT3,SPR_MECHA_DEAD,
@@ -536,7 +546,7 @@ enum
     SPR_HITLER_DIE5,SPR_HITLER_DIE6,SPR_HITLER_DIE7,
 
 //
-// giftmacher
+// giftmacher ok
 //
     SPR_GIFT_W1,SPR_GIFT_W2,SPR_GIFT_W3,SPR_GIFT_W4,
     SPR_GIFT_SHOOT1,SPR_GIFT_SHOOT2,
@@ -553,7 +563,7 @@ enum
     SPR_BOOM_1,SPR_BOOM_2,SPR_BOOM_3,
 
 //
-// Angel of Death's DeathSparks(tm)
+// ok Angel of Death's DeathSparks(tm)
 //
 #ifdef SPEAR
     SPR_HROCKET_1,SPR_HROCKET_2,SPR_HROCKET_3,SPR_HROCKET_4,
@@ -567,7 +577,7 @@ enum
 
 #ifndef SPEAR
 //
-// gretel
+// gretel ok
 //
     SPR_GRETEL_W1,SPR_GRETEL_W2,SPR_GRETEL_W3,SPR_GRETEL_W4,
     SPR_GRETEL_SHOOT1,SPR_GRETEL_SHOOT2,SPR_GRETEL_SHOOT3,SPR_GRETEL_DEAD,
@@ -575,7 +585,7 @@ enum
     SPR_GRETEL_DIE1,SPR_GRETEL_DIE2,SPR_GRETEL_DIE3,
 
 //
-// fat face
+// fat face ok
 //
     SPR_FAT_W1,SPR_FAT_W2,SPR_FAT_W3,SPR_FAT_W4,
     SPR_FAT_SHOOT1,SPR_FAT_SHOOT2,SPR_FAT_SHOOT3,SPR_FAT_SHOOT4,
@@ -583,7 +593,7 @@ enum
     SPR_FAT_DIE1,SPR_FAT_DIE2,SPR_FAT_DIE3,SPR_FAT_DEAD,
 
 //
-// bj
+// bj ok
 //
 #ifdef APOGEE_1_0
     SPR_BJ_W1=360,
@@ -600,7 +610,7 @@ enum
 //
 
 //
-// Trans Grosse
+// ok Trans Grosse
 //
     SPR_TRANS_W1,SPR_TRANS_W2,SPR_TRANS_W3,SPR_TRANS_W4,
     SPR_TRANS_SHOOT1,SPR_TRANS_SHOOT2,SPR_TRANS_SHOOT3,SPR_TRANS_DEAD,
@@ -608,7 +618,7 @@ enum
     SPR_TRANS_DIE1,SPR_TRANS_DIE2,SPR_TRANS_DIE3,
 
 //
-// Wilhelm
+// ok Wilhelm
 //
     SPR_WILL_W1,SPR_WILL_W2,SPR_WILL_W3,SPR_WILL_W4,
     SPR_WILL_SHOOT1,SPR_WILL_SHOOT2,SPR_WILL_SHOOT3,SPR_WILL_SHOOT4,
@@ -616,7 +626,7 @@ enum
     SPR_WILL_DIE1,SPR_WILL_DIE2,SPR_WILL_DIE3,SPR_WILL_DEAD,
 
 //
-// UberMutant
+// ok UberMutant
 //
     SPR_UBER_W1,SPR_UBER_W2,SPR_UBER_W3,SPR_UBER_W4,
     SPR_UBER_SHOOT1,SPR_UBER_SHOOT2,SPR_UBER_SHOOT3,SPR_UBER_SHOOT4,
@@ -625,7 +635,7 @@ enum
     SPR_UBER_DEAD,
 
 //
-// Death Knight
+// ok Death Knight
 //
     SPR_DEATH_W1,SPR_DEATH_W2,SPR_DEATH_W3,SPR_DEATH_W4,
     SPR_DEATH_SHOOT1,SPR_DEATH_SHOOT2,SPR_DEATH_SHOOT3,SPR_DEATH_SHOOT4,
@@ -634,13 +644,13 @@ enum
     SPR_DEATH_DIE5,SPR_DEATH_DIE6,SPR_DEATH_DEAD,
 
 //
-// Ghost
+// ok Ghost
 //
     SPR_SPECTRE_W1,SPR_SPECTRE_W2,SPR_SPECTRE_W3,SPR_SPECTRE_W4,
     SPR_SPECTRE_F1,SPR_SPECTRE_F2,SPR_SPECTRE_F3,SPR_SPECTRE_F4,
 
 //
-// Angel of Death
+// ok Angel of Death
 //
     SPR_ANGEL_W1,SPR_ANGEL_W2,SPR_ANGEL_W3,SPR_ANGEL_W4,
     SPR_ANGEL_SHOOT1,SPR_ANGEL_SHOOT2,SPR_ANGEL_TIRED1,SPR_ANGEL_TIRED2,
@@ -1045,9 +1055,9 @@ extern  byte            bordercol;
 extern  SDL_Surface     *latchpics[NUMLATCHPICS];
 //extern  char            demoname[13];
 
-void    SetupGameLevel (void);
+int    SetupGameLevel (void);
 void    GameLoop (void);
-void    DrawPlayBorder (void);
+inline void    DrawPlayBorder (void);
 void    DrawStatusBorder (byte color);
 void    DrawPlayScreen (void);
 void	DrawStatusBar (void);
@@ -1178,7 +1188,7 @@ void Victory (void);
 void LevelCompleted (void);
 void ClearSplitVWB (void);
 
-void PreloadGraphics(void);
+void PreloadGraphics(int loaded);
 
 
 /*
