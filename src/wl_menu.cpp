@@ -10,7 +10,7 @@
 #ifdef _WIN32
 	#include <io.h>
 #else
-	#include <unistd.h>
+	//#include <unistd.h>
 #endif
 
 #include "wl_def.h"
@@ -300,7 +300,7 @@ US_ControlPanel (ScanCode scancode)
     else
         StartCPMusic (MENUSONG);
     SetupControlPanel ();
-//VBT déplacé
+//VBT dï¿½placï¿½
 	StartCPMusic (MENUSONG);
 
 #ifdef SPEAR
@@ -330,7 +330,7 @@ US_ControlPanel (ScanCode scancode)
             StartCPMusic (XJAZNAZI_MUS);
             UnCacheLump (OPTIONS_LUMP_START, OPTIONS_LUMP_END);
             UnCacheLump (BACKDROP_LUMP_START, BACKDROP_LUMP_END);
-            
+
 
 
             CA_CacheGrChunk (IDGUYS1PIC);
@@ -408,29 +408,29 @@ US_ControlPanel (ScanCode scancode)
 		slSynch(); // vbt ajout 26/05
     }
     while (!StartGame);
-	//slPrint("exit game 6!!!!",slLocate(10,11));	
+	//slPrint("exit game 6!!!!",slLocate(10,11));
 
     //
     // DEALLOCATE EVERYTHING
     //
     CleanupControlPanel ();
-	//slPrint("exit game 7!!!!",slLocate(10,11));	
+	//slPrint("exit game 7!!!!",slLocate(10,11));
 
     //
     // CHANGE MAINMENU ITEM
     //
     if (startgame)
         EnableEndGameMenuItem();
-	//slPrint("exit game 8!!!!",slLocate(10,11));	
-	
+	//slPrint("exit game 8!!!!",slLocate(10,11));
+
     // RETURN/START GAME EXECUTION
-//slPrint("slScrTransparent6",slLocate(1,17));		
+//slPrint("slScrTransparent6",slLocate(1,17));
 	slScrTransparent(0);
-// vbt : nettoyage ecran en sortie de menu	
+// vbt : nettoyage ecran en sortie de menu
 	curSurface = screen;
 	VL_BarScaledCoord (viewscreenx,viewscreeny,viewwidth,viewheight,0);
 	curSurface = screenBuffer;
-	VL_BarScaledCoord (viewscreenx,viewscreeny,viewwidth,viewheight,0); // vbt nettoie l'écran, à mettre en sortant du resize	
+	VL_BarScaledCoord (viewscreenx,viewscreeny,viewwidth,viewheight,0); // vbt nettoie l'ï¿½cran, ï¿½ mettre en sortant du resize
 #ifdef SPEAR
     UnCacheLump (OPTIONS_LUMP_START, OPTIONS_LUMP_END);
 #endif
@@ -511,9 +511,9 @@ DrawMainMenu (void)
     }
 
     DrawMenu (&MainItems, &MainMenu[0]);
-#ifndef USE_SPRITES	
+#ifndef USE_SPRITES
     VW_UpdateScreen ();
-#endif	
+#endif
 }
 
 #ifndef GOODTIMES
@@ -651,9 +651,9 @@ CP_CheckQuick (ScanCode scancode)
 #endif
 #endif
             {
-#ifndef USE_SPRITES				
+#ifndef USE_SPRITES
                 VW_UpdateScreen ();
-#endif				
+#endif
                 SD_MusicOff ();
                 SD_StopSound ();
                 MenuFadeOut ();
@@ -685,13 +685,13 @@ CP_EndGame (int)
 #else
     res = Confirm (ENDGAMESTR);
 #endif
-	//slPrint("exit game !!!!",slLocate(10,11));	
+	//slPrint("exit game !!!!",slLocate(10,11));
 
     DrawMainMenu();
-	//slPrint("exit game 2!!!!",slLocate(10,11));	
+	//slPrint("exit game 2!!!!",slLocate(10,11));
 
     if(!res) return 0;
-	//slPrint("exit game 3!!!!",slLocate(10,11));	
+	//slPrint("exit game 3!!!!",slLocate(10,11));
 
     /*pickquick =*/ gamestate.lives = 0;
     playstate = ex_died;
@@ -702,7 +702,7 @@ CP_EndGame (int)
 #ifndef JAPAN
     strcpy (MainMenu[viewscores].string, STR_VS);
 #endif
-	//slPrint("exit game 4!!!!",slLocate(10,11));	
+	//slPrint("exit game 4!!!!",slLocate(10,11));
 
     return 1;
 }
@@ -726,9 +726,9 @@ CP_ViewScores (int)
 #endif
 
     DrawHighScores ();
-#ifndef USE_SPRITES	
+#ifndef USE_SPRITES
     VW_UpdateScreen ();
-#endif	
+#endif
     MenuFadeIn ();
     fontnumber = 1;
 
@@ -782,12 +782,12 @@ CP_NewGame (int)
                     SD_PlaySound (NOWAYSND);
                     Message ("Please select \"Read This!\"\n"
                              "from the Options menu to\n"
-                             "find out how to order this\n" "episode from Apogee.");	
+                             "find out how to order this\n" "episode from Apogee.");
   			//slPrint("IN_ClearKeysDown",slLocate(10,9));
                     IN_ClearKeysDown ();
-  			//slPrint("IN_Ack",slLocate(10,9));	
+  			//slPrint("IN_Ack",slLocate(10,9));
                     IN_Ack ();
-  			//slPrint("DrawNewEpisode",slLocate(10,9));	
+  			//slPrint("DrawNewEpisode",slLocate(10,9));
                     DrawNewEpisode ();
                     which = 0;
                 }
@@ -913,7 +913,7 @@ DrawNewEpisode (void)
         VWB_DrawPic (NE_X + 32, NE_Y + i * 26, C_EPISODE1PIC + i);
 #ifndef USE_SPRITES
     VW_UpdateScreen ();
-#endif	
+#endif
     MenuFadeIn ();
     WaitKeyUp ();
 }
@@ -951,9 +951,9 @@ DrawNewGame (void)
 
     DrawMenu (&NewItems, &NewMenu[0]);
     DrawNewGameDiff (NewItems.curpos);
-#ifndef USE_SPRITES	
+#ifndef USE_SPRITES
     VW_UpdateScreen ();
-#endif	
+#endif
     MenuFadeIn ();
     WaitKeyUp ();
 }
@@ -1001,9 +1001,9 @@ CP_ChangeView (int)
                     newview = 4;
                 if(newview >= 19) DrawChangeView(newview);
                 else ShowViewSize (newview);
-#ifndef USE_SPRITES				
+#ifndef USE_SPRITES
                 VW_UpdateScreen ();
-#endif				
+#endif
                 SD_PlaySound (HITWALLSND);
                 TicDelay (10);
                 break;
@@ -1017,9 +1017,9 @@ CP_ChangeView (int)
                     DrawChangeView(newview);
                 }
                 else ShowViewSize (newview);
-#ifndef USE_SPRITES				
+#ifndef USE_SPRITES
                 VW_UpdateScreen ();
-#endif				
+#endif
                 SD_PlaySound (HITWALLSND);
                 TicDelay (10);
                 break;
@@ -1037,7 +1037,7 @@ CP_ChangeView (int)
         }
     }
     while (!exit);
-	
+
     if (oldview != newview)
     {
         SD_PlaySound (SHOOTSND);
@@ -1047,7 +1047,7 @@ CP_ChangeView (int)
 
     ShootSnd ();
     MenuFadeOut ();
-	
+
     if(screenHeight % 200 != 0)
         VL_ClearScreen(0);
 
@@ -1062,7 +1062,7 @@ CP_ChangeView (int)
 void
 DrawChangeView (int view)
 {
-//slPrint("slScrTransparent8",slLocate(1,17));		
+//slPrint("slScrTransparent8",slLocate(1,17));
 	slScrTransparent(0);
     int rescaledHeight = screenHeight / scaleFactor;
     if(view != 21) VWB_Bar (0, rescaledHeight - 40, SATURN_WIDTH, 40, bordercol);
@@ -1094,17 +1094,17 @@ DrawChangeView (int view)
 
 //	DrawScaleds();
 //		slTransferEntry((void *)wall_buffer,(void *)(SpriteVRAM + cgaddress),(SATURN_WIDTH+64) * 64);
- 
+
  extern SPRITE user_walls[120];
 		SPRITE *user_wall = user_walls;
 
 		for(unsigned int pixx=0;pixx<=80;pixx++)
 		{
 			int depth = (user_wall->YB+user_wall->YC)/2;
-			slSetSprite(user_wall++, toFIXED(SATURN_SORT_VALUE-depth));	// à remettre // murs
+			slSetSprite(user_wall++, toFIXED(SATURN_SORT_VALUE-depth));	// ï¿½ remettre // murs
 		}
 	slSynch();*/
-#endif	
+#endif
 }
 
 
@@ -1129,9 +1129,9 @@ CP_Quit (int)
 
 #endif
     {
-#ifndef USE_SPRITES		
+#ifndef USE_SPRITES
         VW_UpdateScreen ();
-#endif		
+#endif
         SD_MusicOff ();
         SD_StopSound ();
         MenuFadeOut ();
@@ -1261,13 +1261,13 @@ CleanupControlPanel (void)
 #endif
 
     fontnumber = 0;
-// vbt 13/08/2020 : ajout	
+// vbt 13/08/2020 : ajout
 //		byte *vbuf = (byte *)curSurface->pixels;
 //		byte *ptr = vbuf;
 
 	//	for(int y = 0; y < screenHeight; y++, ptr += curPitch)
-	//		memset(ptr, 0x00, screenWidth);	
-	memset((byte *)curSurface->pixels, 0x00, screenWidth*screenHeight);	
+	//		memset(ptr, 0x00, screenWidth);
+	memset((byte *)curSurface->pixels, 0x00, screenWidth*screenHeight);
 }
 
 
@@ -1304,7 +1304,7 @@ HandleMenu (CP_iteminfo * item_i, CP_itemtype * items, void (*routine) (int w))
     //
     if (routine)
         routine (which);
-#ifndef USE_SPRITES	
+#ifndef USE_SPRITES
     VW_UpdateScreen ();
 #endif
     shape = C_CURSOR1PIC;
@@ -1335,9 +1335,9 @@ HandleMenu (CP_iteminfo * item_i, CP_itemtype * items, void (*routine) (int w))
             VWB_DrawPic (x, y, shape);
             if (routine)
                 routine (which);
-#ifndef USE_SPRITES			
+#ifndef USE_SPRITES
             VW_UpdateScreen ();
-#endif			
+#endif
         }
         else SDL_Delay(5);
 
@@ -1487,7 +1487,7 @@ HandleMenu (CP_iteminfo * item_i, CP_itemtype * items, void (*routine) (int w))
 
     if (routine)
         routine (which);
-#ifndef USE_SPRITES	
+#ifndef USE_SPRITES
     VW_UpdateScreen ();
 #endif
     item_i->curpos = which;
@@ -1528,9 +1528,9 @@ EraseGun (CP_iteminfo * item_i, CP_itemtype * items, int x, int y, int which)
     PrintX = item_i->x + item_i->indent;
     PrintY = item_i->y + which * 13;
     US_Print ((items + which)->string);
-#ifndef USE_SPRITES	
+#ifndef USE_SPRITES
     VW_UpdateScreen ();
-#endif	
+#endif
 }
 
 
@@ -1541,9 +1541,9 @@ void
 DrawHalfStep (int x, int y)
 {
     VWB_DrawPic (x, y, C_CURSOR1PIC);
-#ifndef USE_SPRITES	
+#ifndef USE_SPRITES
     VW_UpdateScreen ();
-#endif	
+#endif
     SD_PlaySound (MOVEGUN1SND);
     SDL_Delay (8 * 100 / 7);
 }
@@ -1570,9 +1570,9 @@ DrawGun (CP_iteminfo * item_i, CP_itemtype * items, int x, int *y, int which, in
     //
     if (routine)
         routine (which);
-#ifndef USE_SPRITES	
+#ifndef USE_SPRITES
     VW_UpdateScreen ();
-#endif	
+#endif
     SD_PlaySound (MOVEGUN2SND);
 }
 
@@ -1717,9 +1717,9 @@ Confirm (const char *string)
                     PrintY = y;
                     US_Print ("_");
             }
-#ifndef USE_SPRITES			
+#ifndef USE_SPRITES
             VW_UpdateScreen ();
-#endif			
+#endif
             tick ^= 1;
             lastBlinkTime = GetTimeCount();
         }
@@ -1770,9 +1770,9 @@ GetYorN (int x, int y, int pic)
     CA_CacheGrChunk (pic);
     VWB_DrawPic (x * 8, y * 8, pic);
     UNCACHEGRCHUNK (pic);
-#ifndef USE_SPRITES	
+#ifndef USE_SPRITES
     VW_UpdateScreen ();
-#endif	
+#endif
     IN_ClearKeysDown ();
 
     do
@@ -1835,7 +1835,7 @@ Message (const char *string)
     fontnumber = 1;
     font = (fontstruct *) grsegs[STARTFONT + fontnumber];
     h = SWAP_BYTES_16(font->height);
- 
+
     for (i = 0; i < len; i++)
     {
         if (string[i] == '\n')
@@ -1858,9 +1858,9 @@ Message (const char *string)
     SETFONTCOLOR (0, TEXTCOLOR);
 
     US_Print (string);
-#ifndef USE_SPRITES	
+#ifndef USE_SPRITES
     VW_UpdateScreen ();
-#endif	
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1968,7 +1968,7 @@ ShootSnd (void)
 //
 // CHECK FOR EPISODES
 //
-///////////////////////////////////////////////////////////////////////////				   
+///////////////////////////////////////////////////////////////////////////
 #undef stat
 /*
 #undef stat
@@ -2089,7 +2089,7 @@ CheckForEpisodes (void)
         else
             Quit ("NO SPEAR OF DESTINY DATA FILES TO BE FOUND!");
     }
-	
+
     else
         Quit ("UNSUPPORTED MISSION!");
 	*/
