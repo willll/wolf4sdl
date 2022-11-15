@@ -23,7 +23,7 @@ project( ${TARGET_NAME} VERSION 1.0
 
 set(as_flags )
 set(cxx_flags
-        -Os -m2 -fpermissive
+        -Os -s -m2 -fpermissive
         -Wno-conversion-null
         -Wshadow
         -Wall
@@ -32,14 +32,16 @@ set(cxx_flags
         -Wextra
         -Wno-narrowing
         #-Wwrite-strings
-        -Wformat-diag
+        #-Wformat-diag
         -falign-functions=4
+        #-ffunction-sections -fdata-sections
         -Wl,--strip-all
         -Wl,--verbose
+        -Wl,--gc-sections
         -mno-fsrra
-        -maccumulate-outgoing-args
+        #-maccumulate-outgoing-args
         -fomit-frame-pointer
-        -funit-at-a-time
+        #-funit-at-a-time
         -fno-rtti
         -fno-web
         -fno-lto
@@ -47,7 +49,7 @@ set(cxx_flags
         -fno-common
         -fno-builtin
         -c
-        -lm
+        #-lm
          )
 
 set(SOURCES
