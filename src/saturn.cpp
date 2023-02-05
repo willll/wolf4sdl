@@ -157,14 +157,14 @@ static unsigned int get_hz(void)
 		slCharNbg1(COL_TYPE_32768 , CHAR_SIZE_1x1);
 	}
 
-    slInitBitMap(bmNBG1, BM_512x256, (void *)VDP2_VRAM_A0);
-    slBMPaletteNbg1(1);
+  slInitBitMap(bmNBG1, BM_512x256, (void *)VDP2_VRAM_A0);
+  slBMPaletteNbg1(1);
 	extern Uint16 VDP2_RAMCTL;
 	VDP2_RAMCTL = VDP2_RAMCTL & 0xFCFF;
 	extern Uint16 VDP2_TVMD;
 	VDP2_TVMD &= 0xFEFF;
 
-    slScrAutoDisp(NBG0ON| NBG1ON);
+  slScrAutoDisp(NBG0ON| NBG1ON);
 
 	slScrCycleSet(0x55EEEEEE , NULL , 0x044EEEEE , NULL);
 //#define		BACK_COL_ADR		( VDP2_VRAM_A1 + 0x1fffe )
